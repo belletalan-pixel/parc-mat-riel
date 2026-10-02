@@ -1,0 +1,500 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#1C2630">
+<title>Matériel atelier – Paganetti Thermique</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<style>
+:root{
+  --fond:#E8ECEF; --papier:#FFFFFF; --encre:#1C2630; --gris:#5A6774; --trait:#CDD4DA;
+  --etiquette:#F2C230; --libre:#2E7D4F; --pris:#C26A12; --retard:#B3261E; --resa:#2B5FA6;
+  --r:6px;
+  font-family:'Barlow',system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;
+  color:var(--encre); background:var(--fond); box-sizing:border-box;
+}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;font-size:16px;line-height:1.45;background:var(--fond);padding-bottom:env(safe-area-inset-bottom,0px)}
+
+/* En-tête */
+.top{position:sticky;top:0;z-index:5;background:var(--encre);color:#fff;
+  padding:calc(12px + env(safe-area-inset-top,0px)) 16px 0}
+.top-in{max-width:760px;margin:0 auto}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.brand-titre{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.55rem;line-height:1}
+.brand-sous{color:#AAB6C1;font-size:.88rem}
+nav{display:flex;gap:2px;margin-top:8px}
+.tab{appearance:none;border:0;background:transparent;color:#C3CDD6;font:600 1rem 'Barlow',sans-serif;
+  padding:10px 12px 9px;border-bottom:3px solid transparent;cursor:pointer}
+.tab.on{color:#fff;border-bottom-color:var(--etiquette)}
+.compteur{display:inline-block;min-width:1.5em;padding:0 .4em;margin-left:4px;border-radius:999px;
+  background:var(--etiquette);color:#2A2100;font-size:.8rem;text-align:center}
+.compteur:empty{display:none}
+
+main{max-width:760px;margin:0 auto;padding:8px 16px 56px}
+h1,h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;line-height:1.1;margin:0}
+h1{font-size:1.9rem;margin-top:10px}
+h2{font-size:1.3rem;margin-bottom:8px}
+.bloc{margin-top:24px}
+.resume{margin:-2px 0 10px;color:var(--gris)}
+.txt-retard{color:var(--retard)}
+
+/* Étiquette d'identification (rappel des plaques sur le matériel) */
+.tag{display:inline-block;position:relative;font-family:'Barlow Condensed',sans-serif;font-weight:700;
+  font-size:.98rem;line-height:1.3;background:var(--etiquette);color:#2A2100;
+  padding:2px 9px 2px 18px;border-radius:3px 7px 7px 3px;white-space:nowrap}
+.tag::before{content:'';position:absolute;left:6px;top:50%;width:6px;height:6px;margin-top:-3px;
+  border-radius:50%;background:var(--fond);box-shadow:inset 0 0 0 1px rgba(0,0,0,.3)}
+.tag-xl{font-size:1.3rem;padding:4px 14px 4px 26px}
+.tag-xl::before{left:9px;width:8px;height:8px;margin-top:-4px}
+
+/* Listes */
+.lignes{list-style:none;margin:0;padding:0;background:var(--papier);border:1px solid var(--trait);
+  border-radius:var(--r);overflow:hidden}
+.lignes>li+li{border-top:1px solid var(--trait)}
+.ligne{display:grid;grid-template-columns:auto 1fr;grid-template-areas:"tag main" ". fin";
+  gap:2px 12px;padding:12px 14px 12px 12px;color:inherit;text-decoration:none;border-left:5px solid var(--trait)}
+@media (min-width:620px){
+  .ligne{grid-template-columns:auto 1fr auto;grid-template-areas:"tag main fin";align-items:center}
+  .l-fin{text-align:right}
+}
+.ligne .tag{grid-area:tag;align-self:start;margin-top:1px}
+.l-main{grid-area:main;min-width:0}
+.l-fin{grid-area:fin;font-size:.9rem;color:var(--gris)}
+.l-titre{display:block;font-weight:600}
+.l-meta{display:block;color:var(--gris);font-size:.92rem}
+.ligne:hover{background:#F4F6F8}
+.is-libre{border-left-color:var(--libre)}
+.is-pris{border-left-color:var(--pris)}
+.is-retard{border-left-color:var(--retard)}
+.is-resa{border-left-color:var(--resa)}
+.badge{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.84rem;font-weight:600}
+.badge.retard{background:#F8DAD7;color:var(--retard)}
+.badge.resa{background:#DCE6F5;color:var(--resa)}
+.st-libre{color:var(--libre);font-weight:600}
+.st-pris{color:var(--pris);font-weight:600}
+.vide{color:var(--gris);padding:14px;margin:0;background:var(--papier);border:1px dashed var(--trait);border-radius:var(--r)}
+li.vide{border:0;border-radius:0}
+
+/* Formulaires */
+label{display:block;font-weight:600;margin-top:12px}
+.opt{font-weight:400;color:var(--gris);font-size:.88rem}
+input,select,textarea{display:block;width:100%;margin-top:4px;font:inherit;font-weight:400;padding:10px 12px;
+  border:1px solid #AEB8C1;border-radius:var(--r);background:#fff;color:var(--encre)}
+textarea{resize:vertical}
+input[type=search]{margin:0 0 10px}
+.filtres{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.filtre{border:1px solid #AEB8C1;background:var(--papier);border-radius:999px;padding:6px 14px;
+  font:500 .95rem 'Barlow',sans-serif;cursor:pointer;color:var(--encre)}
+.filtre.on{background:var(--encre);color:#fff;border-color:var(--encre)}
+.deux{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.btn{display:block;width:100%;margin-top:16px;padding:14px;border:0;border-radius:var(--r);
+  font:700 1.12rem 'Barlow Condensed',sans-serif;color:#fff;background:var(--encre);cursor:pointer}
+.btn-prendre{background:var(--pris)}
+.btn-rendre{background:var(--libre)}
+.btn-resa{background:var(--resa)}
+.btn:disabled{opacity:.55;cursor:progress}
+.btn-lien{border:0;background:none;color:var(--retard);font:600 .95rem 'Barlow',sans-serif;cursor:pointer;padding:6px 4px}
+
+/* Fiche */
+.retour{display:inline-block;margin-top:12px;color:var(--gris);text-decoration:none;font-weight:600}
+.retour:hover{color:var(--encre)}
+.fiche-tete{margin-top:12px}
+.cat{margin:2px 0 0;color:var(--gris)}
+.etat{margin-top:16px;padding:14px 16px;background:var(--papier);border:1px solid var(--trait);
+  border-left:6px solid var(--trait);border-radius:var(--r)}
+.etat-titre{margin:0;font:700 1.3rem 'Barlow Condensed',sans-serif}
+.etat.is-libre .etat-titre{color:var(--libre)}
+.etat.is-pris .etat-titre{color:var(--pris)}
+.etat.is-retard .etat-titre{color:var(--retard)}
+dl{display:grid;grid-template-columns:max-content 1fr;gap:4px 14px;margin:10px 0 0}
+dt{color:var(--gris)} dd{margin:0}
+.action{margin-top:16px;padding:16px;background:var(--papier);border:1px solid var(--trait);border-radius:var(--r)}
+.resas{list-style:none;padding:0;margin:0 0 10px}
+.resas li{display:flex;justify-content:space-between;align-items:center;gap:8px;padding:10px 12px 10px 14px;
+  background:var(--papier);border:1px solid var(--trait);border-left:5px solid var(--resa);
+  border-radius:var(--r);margin-bottom:6px}
+.reserver{background:var(--papier);border:1px solid var(--trait);border-radius:var(--r);padding:0 16px}
+.reserver summary{cursor:pointer;padding:14px 0;font-weight:600;color:var(--resa)}
+.reserver form{padding-bottom:16px}
+
+/* Historique */
+.histo{list-style:none;margin:0;padding:0 0 0 14px;border-left:2px solid var(--trait)}
+.histo li{position:relative;padding:4px 0 12px 8px}
+.histo li::before{content:'';position:absolute;left:-22px;top:9px;width:10px;height:10px;border-radius:50%;
+  background:var(--fond);border:2px solid var(--gris)}
+.histo time{display:block;font-size:.85rem;color:var(--gris)}
+.histo em{display:block;color:var(--gris)}
+
+/* Messages */
+#toast{position:fixed;left:50%;bottom:calc(20px + env(safe-area-inset-bottom,0px));z-index:20;
+  transform:translate(-50%,16px);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;
+  background:var(--encre);color:#fff;padding:12px 18px;border-radius:var(--r);max-width:calc(100% - 32px);
+  font-weight:600;box-shadow:0 6px 20px rgba(28,38,48,.25)}
+#toast.show{opacity:1;transform:translate(-50%,0)}
+#toast.err{background:var(--retard)}
+dialog{border:0;border-radius:var(--r);padding:20px;max-width:380px;width:calc(100% - 32px);color:var(--encre)}
+dialog::backdrop{background:rgba(28,38,48,.55)}
+dialog p{margin:0 0 4px;font-weight:600}
+.dlg-btns{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
+.dlg-btns .btn{width:auto;margin:0;padding:10px 18px}
+.dlg-btns .btn-lien{color:var(--gris)}
+.chargement{padding:48px 0;text-align:center;color:var(--gris)}
+.erreur{margin-top:24px;padding:16px;background:var(--papier);border:1px solid var(--trait);
+  border-left:6px solid var(--retard);border-radius:var(--r)}
+.erreur .btn{width:auto;padding:10px 18px}
+
+:focus-visible{outline:3px solid var(--resa);outline-offset:2px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <div class="brand">
+      <span class="brand-titre">Matériel atelier</span>
+      <span class="brand-sous">Paganetti Thermique</span>
+    </div>
+    <nav>
+      <button class="tab" data-tab="accueil" type="button">Empruntés<span class="compteur" id="nbPris"></span></button>
+      <button class="tab" data-tab="liste" type="button">Tout le matériel</button>
+    </nav>
+  </div>
+</header>
+<main id="app"></main>
+<div id="toast" role="status" aria-live="polite"></div>
+<dialog id="dlg"></dialog>
+
+<script>
+let DATA = null, FICHE = null, occupe = false;
+const st = { q: '', cat: '' };
+const $ = s => document.querySelector(s);
+const app = $('#app');
+
+// ---------- Utilitaires ----------
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
+const fr = s => { if (!s) return ''; const [y, m, d] = s.slice(0, 10).split('-'); return `${d}/${m}/${y}`; };
+const frH = s => s ? `${fr(s)} à ${s.slice(11, 16)}` : '';
+const enRetard = e => e.statut === 'Pris' && e.retourPrevu && e.retourPrevu < DATA.aujourdhui;
+
+function memNom(v) {
+  try {
+    if (v !== undefined) localStorage.setItem('pm_nom', v);
+    return localStorage.getItem('pm_nom') || '';
+  } catch (e) { return v || ''; }
+}
+
+async function api(params) {
+  const r = await fetch(SCRIPT_URL + '?p=' + encodeURIComponent(JSON.stringify(params)));
+  if (!r.ok) throw new Error('La base de données ne répond pas (code ' + r.status + ').');
+  const j = await r.json();
+  if (j.error) throw new Error(j.error);
+  return j;
+}
+
+function toast(msg, err) {
+  const t = $('#toast');
+  t.textContent = msg;
+  t.className = 'show' + (err ? ' err' : '');
+  clearTimeout(t._t);
+  t._t = setTimeout(() => t.className = '', err ? 6000 : 3000);
+}
+
+function selNom(id, val) {
+  return `<select id="${id}" required><option value="">Choisir un nom</option>${
+    DATA.emprunteurs.map(n => `<option${n === val ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>`;
+}
+
+const chargement = () => `<p class="chargement">Chargement…</p>`;
+function erreur(err) {
+  return `<div class="erreur"><p><strong>Impossible d’afficher la page.</strong></p><p>${esc(err.message)}</p>
+    <p>Vérifiez la connexion réseau puis réessayez.</p>
+    <button class="btn" type="button" onclick="demarrer()">Réessayer</button></div>`;
+}
+
+// ---------- Navigation ----------
+async function charger() {
+  DATA = await api({ action: 'init' });
+  $('#nbPris').textContent = DATA.equipements.filter(e => e.statut === 'Pris').length || '';
+}
+
+function router() {
+  const p = new URLSearchParams(location.search);
+  const id = p.get('id');
+  if (id) { majTabs(null); afficherFiche(id); return; }
+  const vue = p.get('vue') === 'liste' ? 'liste' : 'accueil';
+  majTabs(vue);
+  vue === 'liste' ? vueListe() : vueAccueil();
+}
+
+function aller(params) {
+  const u = new URL(location.href);
+  u.search = '';
+  Object.entries(params).forEach(([k, v]) => v && u.searchParams.set(k, v));
+  history.pushState({}, '', u);
+  window.scrollTo(0, 0);
+  router();
+}
+
+function majTabs(vue) {
+  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === vue));
+}
+
+document.querySelectorAll('.tab').forEach(b =>
+  b.addEventListener('click', () => aller(b.dataset.tab === 'liste' ? { vue: 'liste' } : {})));
+
+document.addEventListener('click', ev => {
+  const a = ev.target.closest('a[data-nav]');
+  if (!a || ev.ctrlKey || ev.metaKey) return;
+  ev.preventDefault();
+  aller(Object.fromEntries(new URL(a.href).searchParams));
+});
+window.addEventListener('popstate', router);
+
+async function demarrer() {
+  if (typeof SCRIPT_URL === 'undefined' || !SCRIPT_URL || SCRIPT_URL.includes('COLLER')) {
+    app.innerHTML = `<div class="erreur"><p><strong>Base de données non configurée.</strong></p>
+      <p>Renseignez l’URL du déploiement Apps Script dans le fichier config.js.</p></div>`;
+    return;
+  }
+  app.innerHTML = chargement();
+  try { await charger(); router(); }
+  catch (err) { app.innerHTML = erreur(err); }
+}
+
+// ---------- Vue : empruntés ----------
+function lignePris(e) {
+  const r = enRetard(e);
+  const fin = e.retourPrevu
+    ? (r ? `<span class="badge retard">Retour prévu le ${fr(e.retourPrevu)}</span>` : `Retour le ${fr(e.retourPrevu)}`)
+    : 'Sans date de retour';
+  return `<li><a data-nav class="ligne ${r ? 'is-retard' : 'is-pris'}" href="?id=${encodeURIComponent(e.id)}">
+    <span class="tag">${esc(e.id)}</span>
+    <span class="l-main"><span class="l-titre">${esc(e.designation)}</span>
+      <span class="l-meta">${esc(e.emprunteur)}${e.datePrise ? ` depuis le ${fr(e.datePrise)}` : ''}${e.chantier ? `, ${esc(e.chantier)}` : ''}</span></span>
+    <span class="l-fin">${fin}</span></a></li>`;
+}
+
+function ligneResa(r) {
+  const enCours = r.du <= DATA.aujourdhui;
+  return `<li><a data-nav class="ligne is-resa" href="?id=${encodeURIComponent(r.id)}">
+    <span class="tag">${esc(r.id)}</span>
+    <span class="l-main"><span class="l-titre">${esc(r.designation)}</span>
+      <span class="l-meta">${esc(r.personne)}${r.chantier ? `, ${esc(r.chantier)}` : ''}</span></span>
+    <span class="l-fin">${enCours ? '<span class="badge resa">En cours</span> ' : ''}Du ${fr(r.du)} au ${fr(r.au)}</span></a></li>`;
+}
+
+function vueAccueil() {
+  const pris = DATA.equipements.filter(e => e.statut === 'Pris').sort((a, b) => {
+    const ra = enRetard(a), rb = enRetard(b);
+    if (ra !== rb) return ra ? -1 : 1;
+    return (a.retourPrevu || '9999').localeCompare(b.retourPrevu || '9999');
+  });
+  const nbRetard = pris.filter(enRetard).length;
+  app.innerHTML = `
+    <section class="bloc">
+      <h2>Équipements empruntés</h2>
+      ${pris.length ? `<p class="resume">${pris.length} équipement${pris.length > 1 ? 's' : ''} sorti${pris.length > 1 ? 's' : ''}${
+        nbRetard ? `, dont <strong class="txt-retard">${nbRetard} en retard</strong>` : ''}</p>
+        <ul class="lignes">${pris.map(lignePris).join('')}</ul>`
+      : `<p class="vide">Aucun équipement emprunté : tout est à l’atelier.</p>`}
+    </section>
+    <section class="bloc">
+      <h2>Réservations à venir</h2>
+      ${DATA.reservations.length ? `<ul class="lignes">${DATA.reservations.map(ligneResa).join('')}</ul>`
+        : `<p class="vide">Aucune réservation prévue.</p>`}
+    </section>`;
+}
+
+// ---------- Vue : tout le matériel ----------
+function vueListe() {
+  const cats = DATA.categories.length ? DATA.categories : [...new Set(DATA.equipements.map(e => e.categorie))];
+  app.innerHTML = `
+    <section class="bloc">
+      <h2>Tout le matériel</h2>
+      <input id="q" type="search" placeholder="Rechercher un code ou un nom" value="${esc(st.q)}" autocomplete="off" aria-label="Rechercher">
+      <div class="filtres">${['', ...cats].map(c =>
+        `<button type="button" class="filtre${st.cat === c ? ' on' : ''}" data-cat="${esc(c)}">${c ? esc(c) : 'Tout'}</button>`).join('')}</div>
+      <ul class="lignes" id="liste"></ul>
+    </section>`;
+  $('#q').addEventListener('input', ev => { st.q = ev.target.value; remplirListe(); });
+  app.querySelectorAll('[data-cat]').forEach(b => b.addEventListener('click', () => { st.cat = b.dataset.cat; vueListe(); }));
+  remplirListe();
+}
+
+function ligneEq(e) {
+  const resa = DATA.reservations.find(r => r.id === e.id);
+  const r = enRetard(e);
+  const cls = e.statut === 'Pris' ? (r ? 'is-retard' : 'is-pris') : 'is-libre';
+  const etat = e.statut === 'Pris'
+    ? `<span class="st-pris">Pris par ${esc(e.emprunteur)}</span>${r ? ' <span class="badge retard">En retard</span>' : ''}`
+    : `<span class="st-libre">Libre</span>`;
+  return `<li><a data-nav class="ligne ${cls}" href="?id=${encodeURIComponent(e.id)}">
+    <span class="tag">${esc(e.id)}</span>
+    <span class="l-main"><span class="l-titre">${esc(e.designation)}</span>
+      <span class="l-meta">${etat}</span></span>
+    <span class="l-fin">${resa ? `Réservé à partir du ${fr(resa.du)}` : ''}</span></a></li>`;
+}
+
+function remplirListe() {
+  const q = norm(st.q.trim());
+  const l = DATA.equipements.filter(e =>
+    (!st.cat || e.categorie === st.cat) && (!q || norm(e.id + ' ' + e.designation).includes(q)));
+  $('#liste').innerHTML = l.length ? l.map(ligneEq).join('')
+    : '<li class="vide">Aucun équipement ne correspond à cette recherche.</li>';
+}
+
+// ---------- Vue : fiche équipement ----------
+async function afficherFiche(id) {
+  app.innerHTML = chargement();
+  try { FICHE = await api({ action: 'fiche', id }); }
+  catch (err) {
+    app.innerHTML = `<a data-nav class="retour" href="?vue=liste">Tout le matériel</a>` + erreur(err);
+    return;
+  }
+  rendreFiche();
+}
+
+function ligneHisto(x) {
+  const det = [];
+  if (x.declarePar && x.declarePar !== x.personne) det.push(`déclaré par ${esc(x.declarePar)}`);
+  if (x.periode) det.push(x.action === 'Prise' ? `retour prévu le ${esc(x.periode)}` : esc(x.periode));
+  if (x.duree !== '' && x.duree != null) det.push(`${String(x.duree).replace('.', ',')} j d’emprunt`);
+  if (x.chantier) det.push(esc(x.chantier));
+  return `<li><time>${frH(x.date)}</time>
+    <span><strong>${esc(x.action)}</strong> ${esc(x.personne)}${det.length ? ', ' + det.join(', ') : ''}</span>
+    ${x.remarque ? `<em>${esc(x.remarque)}</em>` : ''}</li>`;
+}
+
+function rendreFiche() {
+  const e = FICHE.equipement, t = FICHE.aujourdhui, nom = memNom();
+  DATA.aujourdhui = t;
+  const r = enRetard(e);
+  let h = `<a data-nav class="retour" href="?vue=liste">Tout le matériel</a>
+    <header class="fiche-tete"><span class="tag tag-xl">${esc(e.id)}</span>
+      <h1>${esc(e.designation)}</h1><p class="cat">${esc(e.categorie)}</p></header>`;
+
+  if (e.statut === 'Pris') {
+    h += `<section class="etat ${r ? 'is-retard' : 'is-pris'}">
+      <p class="etat-titre">Pris par ${esc(e.emprunteur)}</p>
+      <dl>
+        ${e.datePrise ? `<dt>Depuis le</dt><dd>${frH(e.datePrise)}</dd>` : ''}
+        <dt>Retour prévu</dt><dd>${e.retourPrevu ? fr(e.retourPrevu) + (r ? ' <span class="badge retard">Dépassé</span>' : '') : 'Non précisé'}</dd>
+        ${e.chantier ? `<dt>Chantier / info</dt><dd>${esc(e.chantier)}</dd>` : ''}
+        ${e.remarque ? `<dt>Remarque</dt><dd>${esc(e.remarque)}</dd>` : ''}
+      </dl></section>
+      <form class="action" id="fRendre">
+        <h2>Rendre l’équipement</h2>
+        <label>Rendu par ${selNom('rNom', nom || e.emprunteur)}</label>
+        <label>Remarque <span class="opt">facultatif</span>
+          <textarea id="rRem" rows="2" placeholder="État, problème constaté…"></textarea></label>
+        <button class="btn btn-rendre">Rendre l’équipement</button>
+      </form>`;
+  } else {
+    h += `<section class="etat is-libre"><p class="etat-titre">Disponible à l’atelier</p></section>
+      <form class="action" id="fPrendre">
+        <h2>Prendre l’équipement</h2>
+        <label>Emprunteur ${selNom('pNom', nom)}</label>
+        <label>Chantier / client / info <input id="pChantier" type="text" autocomplete="off"></label>
+        <label>Date de retour prévue <span class="opt">facultatif</span><input id="pRetour" type="date" min="${t}"></label>
+        <label>Remarque <span class="opt">facultatif</span><textarea id="pRem" rows="2"></textarea></label>
+        <button class="btn btn-prendre">Prendre l’équipement</button>
+      </form>`;
+  }
+
+  h += `<section class="bloc"><h2>Réservations</h2>
+    ${FICHE.reservations.length ? `<ul class="resas">${FICHE.reservations.map(x => `<li>
+      <span><strong>${esc(x.personne)}</strong> du ${fr(x.du)} au ${fr(x.au)}${x.chantier ? `, ${esc(x.chantier)}` : ''}
+      ${x.du <= t ? ' <span class="badge resa">En cours</span>' : ''}</span>
+      <button type="button" class="btn-lien" data-annuler="${esc(x.ref)}">Annuler</button></li>`).join('')}</ul>`
+      : '<p class="vide" style="margin-bottom:10px">Aucune réservation à venir.</p>'}
+    <details class="reserver"><summary>Réserver pour une date</summary>
+      <form id="fReserver">
+        <label>Réservé par ${selNom('vNom', nom)}</label>
+        <div class="deux">
+          <label>Du <input id="vDu" type="date" min="${t}" required></label>
+          <label>Au <input id="vAu" type="date" min="${t}" required></label>
+        </div>
+        <label>Chantier / client / info <input id="vChantier" type="text" autocomplete="off"></label>
+        <button class="btn btn-resa">Réserver</button>
+      </form></details></section>
+    <section class="bloc"><h2>Derniers mouvements</h2>
+      ${FICHE.historique.length ? `<ol class="histo">${FICHE.historique.map(ligneHisto).join('')}</ol>`
+        : '<p class="vide">Aucun mouvement enregistré.</p>'}</section>`;
+
+  app.innerHTML = h;
+
+  $('#fPrendre')?.addEventListener('submit', ev => {
+    ev.preventDefault();
+    const n = $('#pNom').value;
+    envoyer({ action: 'prendre', id: e.id, personne: n, chantier: $('#pChantier').value.trim(),
+      retourPrevu: $('#pRetour').value, remarque: $('#pRem').value.trim() }, 'Équipement pris', n);
+  });
+  $('#fRendre')?.addEventListener('submit', ev => {
+    ev.preventDefault();
+    const n = $('#rNom').value;
+    envoyer({ action: 'rendre', id: e.id, personne: n, remarque: $('#rRem').value.trim() }, 'Équipement rendu', n);
+  });
+  $('#vDu').addEventListener('change', ev => {
+    $('#vAu').min = ev.target.value || t;
+    if (!$('#vAu').value || $('#vAu').value < ev.target.value) $('#vAu').value = ev.target.value;
+  });
+  $('#fReserver').addEventListener('submit', ev => {
+    ev.preventDefault();
+    const n = $('#vNom').value;
+    envoyer({ action: 'reserver', id: e.id, personne: n, du: $('#vDu').value, au: $('#vAu').value,
+      chantier: $('#vChantier').value.trim() }, 'Réservation enregistrée', n);
+  });
+  app.querySelectorAll('[data-annuler]').forEach(b => b.addEventListener('click', async () => {
+    const n = await demanderNom('Annuler cette réservation ?');
+    if (n) envoyer({ action: 'annuler', id: e.id, ref: b.dataset.annuler, personne: n }, 'Réservation annulée', n);
+  }));
+}
+
+async function envoyer(params, msg, nom) {
+  if (occupe) return;
+  occupe = true;
+  app.querySelectorAll('button').forEach(b => b.disabled = true);
+  try {
+    let r = await api(params);
+    if (r.warning) {
+      if (!confirm(r.warning)) return;
+      r = await api({ ...params, confirm: true });
+      if (r.warning) throw new Error(r.warning);
+    }
+    if (nom) memNom(nom);
+    toast(msg);
+    await charger();
+    FICHE = await api({ action: 'fiche', id: params.id });
+    rendreFiche();
+    window.scrollTo(0, 0);
+  } catch (err) {
+    toast(err.message, true);
+  } finally {
+    occupe = false;
+    app.querySelectorAll('button').forEach(b => b.disabled = false);
+  }
+}
+
+function demanderNom(titre) {
+  return new Promise(res => {
+    const d = $('#dlg');
+    d.innerHTML = `<form method="dialog"><p>${esc(titre)}</p>
+      <label>Votre nom ${selNom('dNom', memNom())}</label>
+      <div class="dlg-btns"><button value="non" formnovalidate class="btn-lien">Retour</button>
+      <button value="oui" class="btn">Confirmer l’annulation</button></div></form>`;
+    d.returnValue = '';
+    d.onclose = () => res(d.returnValue === 'oui' ? $('#dNom').value : null);
+    d.showModal();
+  });
+}
+
+demarrer();
+</script>
+</body>
+</html>

@@ -1,0 +1,138 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Étiquettes QR codes – Matériel atelier</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;600&family=Barlow+Condensed:wght@700&display=swap" rel="stylesheet">
+<script src="config.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<style>
+body{margin:0;font-family:'Barlow',system-ui,sans-serif;color:#1C2630;background:#E8ECEF}
+.barre{max-width:900px;margin:0 auto;padding:20px 16px}
+h1{font-family:'Barlow Condensed',sans-serif;font-size:1.8rem;margin:0 0 4px}
+p{margin:4px 0 12px;color:#5A6774}
+.outils{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:12px 0}
+button,select{font:600 .95rem 'Barlow',sans-serif;padding:8px 14px;border:1px solid #AEB8C1;border-radius:6px;background:#fff;color:#1C2630;cursor:pointer}
+#imprimer{background:#1C2630;color:#fff;border-color:#1C2630}
+#choix{list-style:none;padding:0;margin:0;columns:2 280px;background:#fff;border:1px solid #CDD4DA;border-radius:6px;padding:10px 14px}
+#choix li{break-inside:avoid;padding:3px 0}
+#choix label{cursor:pointer}
+.aper{max-width:900px;margin:0 auto 40px;padding:0 16px}
+.aper h2{font-family:'Barlow Condensed',sans-serif;margin:16px 0 8px}
+
+/* Planche : étiquettes 63,5 × 38,1 mm (planche A4 de 21) */
+.planche{display:grid;grid-template-columns:repeat(3,63.5mm);grid-auto-rows:38.1mm;column-gap:2.5mm;background:#fff;padding:15mm 7mm;width:210mm;box-sizing:border-box}
+.etiq{display:flex;align-items:center;gap:3mm;padding:2.5mm;box-sizing:border-box;overflow:hidden;outline:1px dashed #C9D1D8}
+.etiq .qr{flex:0 0 30mm;width:30mm;height:30mm}
+.etiq .qr img,.etiq .qr canvas{width:30mm!important;height:30mm!important}
+.etiq .txt{min-width:0}
+.etiq .id{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12pt;background:#F2C230;color:#2A2100;padding:0 2mm;border-radius:1mm}
+.etiq .des{font-size:8pt;line-height:1.2;margin-top:1.5mm;max-height:4em;overflow:hidden}
+.etiq .soc{font-size:6.5pt;color:#5A6774;margin-top:1mm}
+
+.affiche{width:210mm;min-height:270mm;background:#fff;box-sizing:border-box;padding:30mm 20mm;text-align:center;margin-top:10mm}
+.affiche h2{font-family:'Barlow Condensed',sans-serif;font-size:40pt;margin:0}
+.affiche p{font-size:16pt;color:#1C2630;margin:6mm 0 12mm}
+.affiche .qr{width:110mm;height:110mm;margin:0 auto}
+.affiche .qr img,.affiche .qr canvas{width:110mm!important;height:110mm!important}
+.affiche .soc{margin-top:10mm;font-size:12pt;color:#5A6774}
+
+@page{size:A4;margin:0}
+@media print{
+  body{background:#fff}
+  .no-print{display:none!important}
+  .aper{padding:0;margin:0;max-width:none}
+  .planche{padding:15.1mm 7.2mm}
+  .etiq{outline:none}
+  .affiche{break-before:page;margin:0}
+}
+</style>
+</head>
+<body>
+<div class="barre no-print">
+  <h1>Étiquettes QR codes</h1>
+  <p>Cochez les équipements à étiqueter, puis imprimez sur une planche A4 de 21 étiquettes (63,5 × 38,1 mm), à l’échelle 100 %.</p>
+  <div class="outils">
+    <select id="cat"><option value="">Toutes les catégories</option></select>
+    <button id="tout" type="button">Tout cocher</button>
+    <button id="rien" type="button">Tout décocher</button>
+    <label><input type="checkbox" id="affiche"> Ajouter l’affiche d’accès au site</label>
+    <button id="imprimer" type="button">Imprimer</button>
+  </div>
+  <ul id="choix"><li>Chargement…</li></ul>
+</div>
+<div class="aper">
+  <h2 class="no-print">Aperçu</h2>
+  <div id="planche" class="planche"></div>
+  <div id="zoneAffiche"></div>
+</div>
+
+<script>
+const BASE = new URL('./', location.href).href;
+let EQ = [];
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+function qr(el, texte) {
+  new QRCode(el, { text: texte, width: 256, height: 256, correctLevel: QRCode.CorrectLevel.M });
+}
+
+function liste() {
+  const c = document.getElementById('cat').value;
+  document.getElementById('choix').innerHTML = EQ.filter(e => !c || e.categorie === c).map(e =>
+    `<li><label><input type="checkbox" value="${esc(e.id)}"${e._sel ? ' checked' : ''}> <strong>${esc(e.id)}</strong> ${esc(e.designation)}</label></li>`).join('');
+}
+
+function planche() {
+  const p = document.getElementById('planche');
+  p.innerHTML = '';
+  EQ.filter(e => e._sel).forEach(e => {
+    const d = document.createElement('div');
+    d.className = 'etiq';
+    d.innerHTML = `<div class="qr"></div><div class="txt"><span class="id">${esc(e.id)}</span>
+      <div class="des">${esc(e.designation)}</div><div class="soc">Paganetti Thermique – scanner pour prendre ou rendre</div></div>`;
+    p.appendChild(d);
+    qr(d.querySelector('.qr'), BASE + '?id=' + encodeURIComponent(e.id));
+  });
+  const z = document.getElementById('zoneAffiche');
+  z.innerHTML = '';
+  if (document.getElementById('affiche').checked) {
+    z.innerHTML = `<div class="affiche"><h2>Matériel atelier</h2>
+      <p>Scannez pour voir le matériel emprunté,<br>prendre, rendre ou réserver un équipement.</p>
+      <div class="qr"></div><div class="soc">Paganetti Thermique</div></div>`;
+    qr(z.querySelector('.qr'), BASE);
+  }
+}
+
+document.getElementById('choix').addEventListener('change', ev => {
+  const e = EQ.find(x => x.id === ev.target.value);
+  if (e) { e._sel = ev.target.checked; planche(); }
+});
+document.getElementById('cat').addEventListener('change', liste);
+document.getElementById('tout').addEventListener('click', () => {
+  const c = document.getElementById('cat').value;
+  EQ.forEach(e => { if (!c || e.categorie === c) e._sel = true; }); liste(); planche();
+});
+document.getElementById('rien').addEventListener('click', () => { EQ.forEach(e => e._sel = false); liste(); planche(); });
+document.getElementById('affiche').addEventListener('change', planche);
+document.getElementById('imprimer').addEventListener('click', () => window.print());
+
+(async () => {
+  try {
+    const r = await fetch(SCRIPT_URL + '?p=' + encodeURIComponent(JSON.stringify({ action: 'init' })));
+    const j = await r.json();
+    if (j.error) throw new Error(j.error);
+    EQ = j.equipements;
+    const s = document.getElementById('cat');
+    (j.categories.length ? j.categories : [...new Set(EQ.map(e => e.categorie))])
+      .forEach(c => s.insertAdjacentHTML('beforeend', `<option>${esc(c)}</option>`));
+    liste(); planche();
+  } catch (err) {
+    document.getElementById('choix').innerHTML = `<li>Impossible de charger la liste : ${esc(err.message)}</li>`;
+  }
+})();
+</script>
+</body>
+</html>
