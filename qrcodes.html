@@ -24,32 +24,41 @@ button,select{font:600 .95rem 'Barlow',sans-serif;padding:8px 14px;border:1px so
 .aper{max-width:900px;margin:0 auto 40px;padding:0 16px}
 .aper h2{font-family:'Barlow Condensed',sans-serif;margin:16px 0 8px}
 
-/* Planche : étiquettes 63,5 × 38,1 mm (planche A4 de 21) */
-.planche{display:grid;grid-template-columns:repeat(3,63.5mm);grid-auto-rows:38.1mm;column-gap:2.5mm;background:#fff;padding:15mm 7mm;width:210mm;box-sizing:border-box}
-.planche:empty{display:none}
-.etiq{display:flex;align-items:center;gap:3mm;padding:2.5mm;box-sizing:border-box;overflow:hidden;outline:1px dashed #C9D1D8}
+/* Feuilles A4 : 3 × 7 étiquettes de 63,5 × 38,1 mm */
+.feuilles{display:flex;flex-direction:column;align-items:center;gap:8mm}
+.feuille{width:210mm;height:296mm;background:#fff;box-sizing:border-box;padding:15.1mm 7.2mm 0;
+  overflow:hidden;box-shadow:0 2px 10px rgba(28,38,48,.15)}
+.grille{display:grid;grid-template-columns:repeat(3,63.5mm);grid-template-rows:repeat(7,38.1mm);column-gap:2.5mm}
+.etiq{display:flex;align-items:center;gap:3mm;padding:2.5mm;box-sizing:border-box;overflow:hidden;
+  outline:1px dashed #C9D1D8;outline-offset:-1px;break-inside:avoid;page-break-inside:avoid}
+.etiq.repere{outline:1px dashed #DDE2E6}
 .etiq .qr{flex:0 0 30mm;width:30mm;height:30mm}
-.etiq .qr img,.etiq .qr canvas{width:30mm!important;height:30mm!important}
+.etiq .qr img,.etiq .qr canvas{display:block;width:30mm!important;height:30mm!important}
 .etiq .txt{min-width:0}
-.etiq .id{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12pt;background:#F2C230;color:#2A2100;padding:0 2mm;border-radius:1mm}
+.etiq .id{display:inline-block;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12pt;background:#F2C230;color:#2A2100;padding:0 2mm;border-radius:1mm;white-space:nowrap;
+  -webkit-print-color-adjust:exact;print-color-adjust:exact}
 .etiq .des{font-size:8pt;line-height:1.2;margin-top:1.5mm;max-height:4em;overflow:hidden}
 .etiq .soc{font-size:6.5pt;color:#5A6774;margin-top:1mm}
 
-.affiche{width:210mm;min-height:270mm;background:#fff;box-sizing:border-box;padding:30mm 20mm;text-align:center;margin-top:10mm}
+.affiche{width:210mm;height:296mm;background:#fff;box-sizing:border-box;padding:30mm 20mm;text-align:center;
+  overflow:hidden;box-shadow:0 2px 10px rgba(28,38,48,.15)}
 .affiche h2{font-family:'Barlow Condensed',sans-serif;font-size:40pt;margin:0}
 .affiche p{font-size:16pt;color:#1C2630;margin:6mm 0 12mm}
 .affiche .qr{width:110mm;height:110mm;margin:0 auto}
-.affiche .qr img,.affiche .qr canvas{width:110mm!important;height:110mm!important}
+.affiche .qr img,.affiche .qr canvas{display:block;width:110mm!important;height:110mm!important}
 .affiche .soc{margin-top:10mm;font-size:12pt;color:#5A6774}
+.depart{margin:0 0 10px;color:#5A6774}
+.depart input{width:4em;font:inherit;padding:4px 6px;margin-left:6px}
 
-@page{size:A4;margin:0}
+@page{size:A4 portrait;margin:0}
 @media print{
-  body{background:#fff}
+  html,body{background:#fff;margin:0;padding:0}
   .no-print{display:none!important}
   .aper{padding:0;margin:0;max-width:none}
-  .planche{padding:15.1mm 7.2mm}
-  .etiq{outline:none}
-  .affiche{break-before:page;margin:0}
+  .feuilles{display:block;gap:0}
+  .feuille,.affiche{box-shadow:none;break-after:page;page-break-after:always}
+  .feuilles>:last-child{break-after:auto;page-break-after:auto}
+  .etiq,.etiq.repere{outline:none}
 }
 </style>
 </head>
@@ -58,7 +67,7 @@ button,select{font:600 .95rem 'Barlow',sans-serif;padding:8px 14px;border:1px so
   <h1>Étiquettes QR codes</h1>
   <p><a href="./">Retour au site</a></p>
   <div id="zone">
-    <p>Cochez les équipements à étiqueter, puis imprimez sur une planche A4 de 21 étiquettes (63,5 × 38,1 mm), à l’échelle 100 %.</p>
+    <p>Cochez les équipements à étiqueter, puis imprimez sur une planche A4 de 21 étiquettes (63,5 × 38,1 mm), à l’échelle 100 % (dans la fenêtre d’impression : Mise à l’échelle « Par défaut » ou 100 %, Marges « Aucune » ou « Par défaut »).</p>
     <div class="outils">
       <select id="cat"><option value="">Toutes les catégories</option></select>
       <button id="tout" type="button">Tout cocher</button>
@@ -66,12 +75,12 @@ button,select{font:600 .95rem 'Barlow',sans-serif;padding:8px 14px;border:1px so
       <label><input type="checkbox" id="affiche"> Ajouter l’affiche d’accès au site</label>
       <button id="imprimer" type="button">Imprimer</button>
     </div>
+    <p class="depart">Commencer à l’étiquette n°<input id="depart" type="number" min="1" max="21" value="1"> de la première planche (pour réutiliser une planche entamée)</p>
     <ul id="choix"><li>Chargement…</li></ul>
   </div>
 </div>
 <div class="aper">
-  <div id="planche" class="planche"></div>
-  <div id="zoneAffiche"></div>
+  <div id="planche" class="feuilles"></div>
 </div>
 
 <script>
@@ -93,24 +102,42 @@ function liste() {
     `<li><label><input type="checkbox" value="${esc(e.id)}"${e._sel ? ' checked' : ''}> <strong>${esc(e.id)}</strong> ${esc(e.designation)}</label></li>`).join('');
 }
 
+function etiquette(e) {
+  const d = document.createElement('div');
+  d.className = 'etiq';
+  d.innerHTML = `<div class="qr"></div><div class="txt"><span class="id">${esc(e.id)}</span>
+    <div class="des">${esc(e.designation)}</div><div class="soc">Paganetti Thermique – scanner pour prendre ou rendre</div></div>`;
+  qr(d.querySelector('.qr'), BASE + '?id=' + encodeURIComponent(e.id));
+  return d;
+}
+
 function planche() {
-  const p = $('planche');
-  p.innerHTML = '';
-  EQ.filter(e => e._sel).forEach(e => {
-    const d = document.createElement('div');
-    d.className = 'etiq';
-    d.innerHTML = `<div class="qr"></div><div class="txt"><span class="id">${esc(e.id)}</span>
-      <div class="des">${esc(e.designation)}</div><div class="soc">Paganetti Thermique – scanner pour prendre ou rendre</div></div>`;
-    p.appendChild(d);
-    qr(d.querySelector('.qr'), BASE + '?id=' + encodeURIComponent(e.id));
-  });
-  const z = $('zoneAffiche');
-  z.innerHTML = '';
+  const zone = $('planche');
+  zone.innerHTML = '';
+  const sel = EQ.filter(e => e._sel);
+  const depart = Math.min(21, Math.max(1, parseInt($('depart').value, 10) || 1)) - 1;
+  // Emplacements vides au début de la 1re planche, puis les étiquettes
+  const cases = Array(sel.length ? depart : 0).fill(null).concat(sel);
+  for (let i = 0; i < cases.length; i += 21) {
+    const f = document.createElement('div');
+    f.className = 'feuille';
+    const g = document.createElement('div');
+    g.className = 'grille';
+    cases.slice(i, i + 21).forEach(e => {
+      if (e) g.appendChild(etiquette(e));
+      else { const v = document.createElement('div'); v.className = 'etiq repere'; g.appendChild(v); }
+    });
+    f.appendChild(g);
+    zone.appendChild(f);
+  }
   if ($('affiche').checked) {
-    z.innerHTML = `<div class="affiche"><h2>Matériel atelier</h2>
+    const a = document.createElement('div');
+    a.className = 'affiche';
+    a.innerHTML = `<h2>Matériel atelier</h2>
       <p>Scannez pour voir le matériel emprunté,<br>prendre, rendre ou réserver un équipement.</p>
-      <div class="qr"></div><div class="soc">Paganetti Thermique</div></div>`;
-    qr(z.querySelector('.qr'), BASE);
+      <div class="qr"></div><div class="soc">Paganetti Thermique</div>`;
+    zone.appendChild(a);
+    qr(a.querySelector('.qr'), BASE);
   }
 }
 
@@ -130,6 +157,7 @@ function planche() {
   });
   $('rien').addEventListener('click', () => { EQ.forEach(e => e._sel = false); liste(); planche(); });
   $('affiche').addEventListener('change', planche);
+  $('depart').addEventListener('input', planche);
   $('imprimer').addEventListener('click', () => window.print());
 
   try {
