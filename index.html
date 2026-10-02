@@ -27,13 +27,19 @@ body{margin:0;font-size:16px;line-height:1.45;background:var(--fond);padding-bot
 .brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
 .brand-titre{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:1.55rem;line-height:1}
 .brand-sous{color:#AAB6C1;font-size:.88rem}
+.moi{margin-left:auto;font-size:.88rem;color:#C3CDD6;display:flex;align-items:baseline;gap:8px}
+.moi strong{color:#fff;font-weight:600}
+.btn-deco{border:0;background:none;color:var(--etiquette);font:600 .88rem 'Barlow',sans-serif;cursor:pointer;padding:4px 0}
 nav{display:flex;gap:2px;margin-top:8px}
+nav[hidden]{display:none}
 .tab{appearance:none;border:0;background:transparent;color:#C3CDD6;font:600 1rem 'Barlow',sans-serif;
-  padding:10px 12px 9px;border-bottom:3px solid transparent;cursor:pointer}
+  padding:10px 12px 9px;border-bottom:3px solid transparent;cursor:pointer;text-decoration:none}
 .tab.on{color:#fff;border-bottom-color:var(--etiquette)}
+.tab[hidden]{display:none}
 .compteur{display:inline-block;min-width:1.5em;padding:0 .4em;margin-left:4px;border-radius:999px;
   background:var(--etiquette);color:#2A2100;font-size:.8rem;text-align:center}
 .compteur:empty{display:none}
+.connexion-vide{height:8px}
 
 main{max-width:760px;margin:0 auto;padding:8px 16px 56px}
 h1,h2{font-family:'Barlow Condensed',sans-serif;font-weight:700;line-height:1.1;margin:0}
@@ -43,7 +49,7 @@ h2{font-size:1.3rem;margin-bottom:8px}
 .resume{margin:-2px 0 10px;color:var(--gris)}
 .txt-retard{color:var(--retard)}
 
-/* Étiquette d'identification (rappel des plaques sur le matériel) */
+/* Étiquette d'identification */
 .tag{display:inline-block;position:relative;font-family:'Barlow Condensed',sans-serif;font-weight:700;
   font-size:.98rem;line-height:1.3;background:var(--etiquette);color:#2A2100;
   padding:2px 9px 2px 18px;border-radius:3px 7px 7px 3px;white-space:nowrap}
@@ -75,14 +81,18 @@ h2{font-size:1.3rem;margin-bottom:8px}
 .badge{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.84rem;font-weight:600}
 .badge.retard{background:#F8DAD7;color:var(--retard)}
 .badge.resa{background:#DCE6F5;color:var(--resa)}
+.badge.moi-b{background:#FCEFC7;color:#6B5200}
 .st-libre{color:var(--libre);font-weight:600}
 .st-pris{color:var(--pris);font-weight:600}
 .vide{color:var(--gris);padding:14px;margin:0;background:var(--papier);border:1px dashed var(--trait);border-radius:var(--r)}
 li.vide{border:0;border-radius:0}
+.discret{color:var(--gris);margin:0}
 
 /* Formulaires */
 label{display:block;font-weight:600;margin-top:12px}
 .opt{font-weight:400;color:var(--gris);font-size:.88rem}
+.qui{margin:10px 0 0;color:var(--gris)}
+.qui strong{color:var(--encre)}
 input,select,textarea{display:block;width:100%;margin-top:4px;font:inherit;font-weight:400;padding:10px 12px;
   border:1px solid #AEB8C1;border-radius:var(--r);background:#fff;color:var(--encre)}
 textarea{resize:vertical}
@@ -99,6 +109,12 @@ input[type=search]{margin:0 0 10px}
 .btn-resa{background:var(--resa)}
 .btn:disabled{opacity:.55;cursor:progress}
 .btn-lien{border:0;background:none;color:var(--retard);font:600 .95rem 'Barlow',sans-serif;cursor:pointer;padding:6px 4px}
+
+/* Connexion */
+.connexion{max-width:420px;margin:32px auto 0;padding:20px;background:var(--papier);border:1px solid var(--trait);border-radius:var(--r)}
+.connexion h1{margin:0 0 6px}
+.connexion p{margin:0;color:var(--gris)}
+.cx-err{margin-top:12px!important;color:var(--retard)!important;font-weight:600}
 
 /* Fiche */
 .retour{display:inline-block;margin-top:12px;color:var(--gris);text-decoration:none;font-weight:600}
@@ -137,12 +153,6 @@ dt{color:var(--gris)} dd{margin:0}
   font-weight:600;box-shadow:0 6px 20px rgba(28,38,48,.25)}
 #toast.show{opacity:1;transform:translate(-50%,0)}
 #toast.err{background:var(--retard)}
-dialog{border:0;border-radius:var(--r);padding:20px;max-width:380px;width:calc(100% - 32px);color:var(--encre)}
-dialog::backdrop{background:rgba(28,38,48,.55)}
-dialog p{margin:0 0 4px;font-weight:600}
-.dlg-btns{display:flex;justify-content:flex-end;gap:10px;margin-top:16px}
-.dlg-btns .btn{width:auto;margin:0;padding:10px 18px}
-.dlg-btns .btn-lien{color:var(--gris)}
 .chargement{padding:48px 0;text-align:center;color:var(--gris)}
 .erreur{margin-top:24px;padding:16px;background:var(--papier);border:1px solid var(--trait);
   border-left:6px solid var(--retard);border-radius:var(--r)}
@@ -158,20 +168,22 @@ dialog p{margin:0 0 4px;font-weight:600}
     <div class="brand">
       <span class="brand-titre">Matériel atelier</span>
       <span class="brand-sous">Paganetti Thermique</span>
+      <span class="moi" id="moi"></span>
     </div>
-    <nav>
+    <nav id="nav" hidden>
       <button class="tab" data-tab="accueil" type="button">Empruntés<span class="compteur" id="nbPris"></span></button>
       <button class="tab" data-tab="liste" type="button">Tout le matériel</button>
+      <a class="tab" id="lienQr" href="qrcodes.html" hidden>Étiquettes</a>
     </nav>
+    <div class="connexion-vide" id="cxVide"></div>
   </div>
 </header>
 <main id="app"></main>
 <div id="toast" role="status" aria-live="polite"></div>
-<dialog id="dlg"></dialog>
 
 <script>
-let DATA = null, FICHE = null, occupe = false;
-const st = { q: '', cat: '' };
+let S = null, DATA = null, FICHE = null, occupe = false;
+const st = { vue: '', id: '', q: '', cat: '' };
 const $ = s => document.querySelector(s);
 const app = $('#app');
 
@@ -180,19 +192,23 @@ const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt
 const norm = s => String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
 const fr = s => { if (!s) return ''; const [y, m, d] = s.slice(0, 10).split('-'); return `${d}/${m}/${y}`; };
 const frH = s => s ? `${fr(s)} à ${s.slice(11, 16)}` : '';
-const enRetard = e => e.statut === 'Pris' && e.retourPrevu && e.retourPrevu < DATA.aujourdhui;
+const enRetard = e => e.statut === 'Pris' && e.retourPrevu && DATA && e.retourPrevu < DATA.aujourdhui;
+const admin = () => S && S.role === 'Admin';
 
-function memNom(v) {
+function stocker(cle, v) {
   try {
-    if (v !== undefined) localStorage.setItem('pm_nom', v);
-    return localStorage.getItem('pm_nom') || '';
-  } catch (e) { return v || ''; }
+    if (v === null) localStorage.removeItem(cle);
+    else if (v !== undefined) localStorage.setItem(cle, JSON.stringify(v));
+    return JSON.parse(localStorage.getItem(cle) || 'null');
+  } catch (e) { return v || null; }
 }
 
 async function api(params) {
-  const r = await fetch(SCRIPT_URL + '?p=' + encodeURIComponent(JSON.stringify(params)));
+  const corps = Object.assign({}, params, S ? { token: S.token } : {});
+  const r = await fetch(SCRIPT_URL + '?p=' + encodeURIComponent(JSON.stringify(corps)));
   if (!r.ok) throw new Error('La base de données ne répond pas (code ' + r.status + ').');
   const j = await r.json();
+  if (j.auth) { deconnecter(j.error); throw new Error(j.error); }
   if (j.error) throw new Error(j.error);
   return j;
 }
@@ -205,31 +221,84 @@ function toast(msg, err) {
   t._t = setTimeout(() => t.className = '', err ? 6000 : 3000);
 }
 
-function selNom(id, val) {
-  return `<select id="${id}" required><option value="">Choisir un nom</option>${
-    DATA.emprunteurs.map(n => `<option${n === val ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select>`;
-}
-
-const chargement = () => `<p class="chargement">Chargement…</p>`;
+const chargement = (txt = 'Chargement…') => `<p class="chargement">${txt}</p>`;
 function erreur(err) {
   return `<div class="erreur"><p><strong>Impossible d’afficher la page.</strong></p><p>${esc(err.message)}</p>
     <p>Vérifiez la connexion réseau puis réessayez.</p>
     <button class="btn" type="button" onclick="demarrer()">Réessayer</button></div>`;
 }
 
-// ---------- Navigation ----------
+// ---------- Session ----------
+function majEntete() {
+  $('#nav').hidden = !S;
+  $('#cxVide').hidden = !!S;
+  $('#lienQr').hidden = !admin();
+  $('#moi').innerHTML = S
+    ? `<strong>${esc(S.nom)}</strong>${admin() ? ' (admin)' : ''}<button class="btn-deco" type="button" id="btnDeco">Se déconnecter</button>`
+    : '';
+  $('#btnDeco')?.addEventListener('click', () => deconnecter());
+}
+
+function deconnecter(msg) {
+  S = null; DATA = null; FICHE = null;
+  stocker('pm_session', null);
+  stocker('pm_cache', null);
+  majEntete();
+  vueConnexion(msg);
+}
+
+function vueConnexion(msg) {
+  st.vue = 'connexion';
+  app.innerHTML = `<section class="connexion">
+    <h1>Connexion</h1>
+    <p>Identifiez-vous pour prendre, rendre ou réserver du matériel. Vous resterez connecté sur cet appareil.</p>
+    ${msg ? `<p class="cx-err">${esc(msg)}</p>` : ''}
+    <form id="fCx">
+      <label>Identifiant <input id="cxId" autocomplete="username" autocapitalize="none" spellcheck="false" required></label>
+      <label>Code <input id="cxCode" type="password" autocomplete="current-password" required></label>
+      <button class="btn">Se connecter</button>
+    </form></section>`;
+  $('#fCx').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const b = ev.target.querySelector('button');
+    b.disabled = true; b.textContent = 'Connexion…';
+    const ident = $('#cxId').value.trim();
+    try {
+      const r = await api({ action: 'connexion', identifiant: ident, code: $('#cxCode').value });
+      S = stocker('pm_session', r.session);
+      demarrer();
+    } catch (err) {
+      vueConnexion(err.message);
+      $('#cxId').value = ident;
+      $('#cxCode').focus();
+    }
+  });
+}
+
+// ---------- Chargement et navigation ----------
 async function charger() {
   DATA = await api({ action: 'init' });
-  $('#nbPris').textContent = DATA.equipements.filter(e => e.statut === 'Pris').length || '';
+  stocker('pm_cache', DATA);
+  majCompteur();
+}
+function majCompteur() {
+  $('#nbPris').textContent = DATA ? (DATA.equipements.filter(e => e.statut === 'Pris').length || '') : '';
 }
 
 function router() {
   const p = new URLSearchParams(location.search);
   const id = p.get('id');
-  if (id) { majTabs(null); afficherFiche(id); return; }
-  const vue = p.get('vue') === 'liste' ? 'liste' : 'accueil';
-  majTabs(vue);
-  vue === 'liste' ? vueListe() : vueAccueil();
+  if (id) { st.vue = 'fiche'; st.id = id; majTabs(null); afficherFiche(id); return; }
+  st.vue = p.get('vue') === 'liste' ? 'liste' : 'accueil';
+  st.id = '';
+  majTabs(st.vue);
+  st.vue === 'liste' ? vueListe() : vueAccueil();
+}
+
+// Mise à jour silencieuse après réception de données fraîches
+function rafraichir() {
+  if (st.vue === 'accueil') vueAccueil();
+  else if (st.vue === 'liste') remplirListe();
 }
 
 function aller(params) {
@@ -242,10 +311,10 @@ function aller(params) {
 }
 
 function majTabs(vue) {
-  document.querySelectorAll('.tab').forEach(b => b.classList.toggle('on', b.dataset.tab === vue));
+  document.querySelectorAll('.tab[data-tab]').forEach(b => b.classList.toggle('on', b.dataset.tab === vue));
 }
 
-document.querySelectorAll('.tab').forEach(b =>
+document.querySelectorAll('.tab[data-tab]').forEach(b =>
   b.addEventListener('click', () => aller(b.dataset.tab === 'liste' ? { vue: 'liste' } : {})));
 
 document.addEventListener('click', ev => {
@@ -254,7 +323,12 @@ document.addEventListener('click', ev => {
   ev.preventDefault();
   aller(Object.fromEntries(new URL(a.href).searchParams));
 });
-window.addEventListener('popstate', router);
+window.addEventListener('popstate', () => { if (S) router(); });
+
+// Retour sur l'onglet : on rafraîchit en arrière-plan
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden && S && (st.vue === 'accueil' || st.vue === 'liste')) charger().then(rafraichir).catch(() => {});
+});
 
 async function demarrer() {
   if (typeof SCRIPT_URL === 'undefined' || !SCRIPT_URL || SCRIPT_URL.includes('COLLER')) {
@@ -262,9 +336,22 @@ async function demarrer() {
       <p>Renseignez l’URL du déploiement Apps Script dans le fichier config.js.</p></div>`;
     return;
   }
-  app.innerHTML = chargement();
-  try { await charger(); router(); }
-  catch (err) { app.innerHTML = erreur(err); }
+  S = stocker('pm_session');
+  majEntete();
+  if (!S) { vueConnexion(); return; }
+
+  const cache = stocker('pm_cache');
+  if (cache) { DATA = cache; majCompteur(); router(); }   // affichage immédiat
+  else app.innerHTML = chargement();
+
+  try {
+    await charger();
+    if (cache) rafraichir(); else router();
+  } catch (err) {
+    if (!S) return;                       // session expirée : écran de connexion déjà affiché
+    if (!cache) app.innerHTML = erreur(err);
+    else toast('Affichage des dernières données connues : ' + err.message, true);
+  }
 }
 
 // ---------- Vue : empruntés ----------
@@ -295,8 +382,12 @@ function vueAccueil() {
     if (ra !== rb) return ra ? -1 : 1;
     return (a.retourPrevu || '9999').localeCompare(b.retourPrevu || '9999');
   });
+  const miens = pris.filter(e => e.emprunteur === S.nom);
   const nbRetard = pris.filter(enRetard).length;
+  const resas = DATA.reservations.filter(r => r.au >= DATA.aujourdhui);
   app.innerHTML = `
+    ${miens.length ? `<section class="bloc"><h2>Mes emprunts</h2>
+      <ul class="lignes">${miens.map(lignePris).join('')}</ul></section>` : ''}
     <section class="bloc">
       <h2>Équipements empruntés</h2>
       ${pris.length ? `<p class="resume">${pris.length} équipement${pris.length > 1 ? 's' : ''} sorti${pris.length > 1 ? 's' : ''}${
@@ -306,7 +397,7 @@ function vueAccueil() {
     </section>
     <section class="bloc">
       <h2>Réservations à venir</h2>
-      ${DATA.reservations.length ? `<ul class="lignes">${DATA.reservations.map(ligneResa).join('')}</ul>`
+      ${resas.length ? `<ul class="lignes">${resas.map(ligneResa).join('')}</ul>`
         : `<p class="vide">Aucune réservation prévue.</p>`}
     </section>`;
 }
@@ -328,7 +419,7 @@ function vueListe() {
 }
 
 function ligneEq(e) {
-  const resa = DATA.reservations.find(r => r.id === e.id);
+  const resa = DATA.reservations.find(r => r.id === e.id && r.au >= DATA.aujourdhui);
   const r = enRetard(e);
   const cls = e.statut === 'Pris' ? (r ? 'is-retard' : 'is-pris') : 'is-libre';
   const etat = e.statut === 'Pris'
@@ -342,22 +433,97 @@ function ligneEq(e) {
 }
 
 function remplirListe() {
+  const el = $('#liste');
+  if (!el) return;
   const q = norm(st.q.trim());
   const l = DATA.equipements.filter(e =>
     (!st.cat || e.categorie === st.cat) && (!q || norm(e.id + ' ' + e.designation).includes(q)));
-  $('#liste').innerHTML = l.length ? l.map(ligneEq).join('')
+  el.innerHTML = l.length ? l.map(ligneEq).join('')
     : '<li class="vide">Aucun équipement ne correspond à cette recherche.</li>';
 }
 
 // ---------- Vue : fiche équipement ----------
 async function afficherFiche(id) {
-  app.innerHTML = chargement();
-  try { FICHE = await api({ action: 'fiche', id }); }
-  catch (err) {
-    app.innerHTML = `<a data-nav class="retour" href="?vue=liste">Tout le matériel</a>` + erreur(err);
-    return;
+  const e = DATA && DATA.equipements.find(x => x.id === id);
+  if (e) {
+    // Affichage immédiat depuis les données en mémoire, historique chargé ensuite
+    FICHE = { aujourdhui: DATA.aujourdhui, equipement: e,
+      reservations: DATA.reservations.filter(r => r.id === id && r.au >= DATA.aujourdhui), historique: null };
+    rendreFiche();
+  } else {
+    app.innerHTML = chargement();
   }
-  rendreFiche();
+  try {
+    const f = await api({ action: 'fiche', id });
+    if (st.vue !== 'fiche' || st.id !== id) return;
+    if (e) majFiche(f); else { FICHE = f; rendreFiche(); }
+  } catch (err) {
+    if (!S) return;
+    if (!e) app.innerHTML = `<a data-nav class="retour" href="?vue=liste">Tout le matériel</a>` + erreur(err);
+    else { toast(err.message, true); if ($('#zHisto')) $('#zHisto').innerHTML = '<p class="discret">Historique indisponible.</p>'; }
+  }
+}
+
+// Ne remplace que ce qui a changé, pour ne pas effacer une saisie en cours
+function majFiche(f) {
+  const o = FICHE.equipement, n = f.equipement;
+  FICHE = f;
+  if (o.statut !== n.statut || o.emprunteur !== n.emprunteur || o.retourPrevu !== n.retourPrevu) {
+    $('#zEtat').innerHTML = htmlEtat();
+    lierEtat();
+  }
+  $('#zResas').innerHTML = htmlResas();
+  lierResas();
+  $('#zHisto').innerHTML = htmlHisto();
+}
+
+function champPour(id, verbe) {
+  if (!admin()) return `<p class="qui">${verbe} au nom de <strong>${esc(S.nom)}</strong></p>`;
+  return `<label>${verbe} pour <select id="${id}">${DATA.emprunteurs.map(n =>
+    `<option${n === S.nom ? ' selected' : ''}>${esc(n)}</option>`).join('')}</select></label>`;
+}
+const valPour = id => admin() && $('#' + id) ? $('#' + id).value : '';
+
+function htmlEtat() {
+  const e = FICHE.equipement, t = FICHE.aujourdhui;
+  const r = e.statut === 'Pris' && e.retourPrevu && e.retourPrevu < t;
+  if (e.statut === 'Pris') {
+    const autre = e.emprunteur !== S.nom;
+    return `<section class="etat ${r ? 'is-retard' : 'is-pris'}">
+      <p class="etat-titre">Pris par ${esc(e.emprunteur)}</p>
+      <dl>
+        ${e.datePrise ? `<dt>Depuis le</dt><dd>${frH(e.datePrise)}</dd>` : ''}
+        <dt>Retour prévu</dt><dd>${e.retourPrevu ? fr(e.retourPrevu) + (r ? ' <span class="badge retard">Dépassé</span>' : '') : 'Non précisé'}</dd>
+        ${e.chantier ? `<dt>Chantier / info</dt><dd>${esc(e.chantier)}</dd>` : ''}
+        ${e.remarque ? `<dt>Remarque</dt><dd>${esc(e.remarque)}</dd>` : ''}
+      </dl></section>
+      <form class="action" id="fRendre">
+        <h2>Rendre l’équipement</h2>
+        <p class="qui">Rendu par <strong>${esc(S.nom)}</strong>${autre ? `, pour le compte de ${esc(e.emprunteur)}` : ''}</p>
+        <label>Remarque <span class="opt">facultatif</span>
+          <textarea id="rRem" rows="2" placeholder="État, problème constaté…"></textarea></label>
+        <button class="btn btn-rendre">Rendre l’équipement</button>
+      </form>`;
+  }
+  return `<section class="etat is-libre"><p class="etat-titre">Disponible à l’atelier</p></section>
+    <form class="action" id="fPrendre">
+      <h2>Prendre l’équipement</h2>
+      ${champPour('pPour', 'Emprunter')}
+      <label>Chantier / client / info <input id="pChantier" type="text" autocomplete="off"></label>
+      <label>Date de retour prévue <span class="opt">facultatif</span><input id="pRetour" type="date" min="${t}"></label>
+      <label>Remarque <span class="opt">facultatif</span><textarea id="pRem" rows="2"></textarea></label>
+      <button class="btn btn-prendre">Prendre l’équipement</button>
+    </form>`;
+}
+
+function htmlResas() {
+  const t = FICHE.aujourdhui;
+  if (!FICHE.reservations.length) return '<p class="vide" style="margin-bottom:10px">Aucune réservation à venir.</p>';
+  return `<ul class="resas">${FICHE.reservations.map(x => `<li>
+    <span><strong>${esc(x.personne)}</strong> du ${fr(x.du)} au ${fr(x.au)}${x.chantier ? `, ${esc(x.chantier)}` : ''}
+    ${x.du <= t ? ' <span class="badge resa">En cours</span>' : ''}</span>
+    ${x.personne === S.nom || admin() ? `<button type="button" class="btn-lien" data-annuler="${esc(x.ref)}"
+      data-txt="${esc(x.personne + ' du ' + fr(x.du) + ' au ' + fr(x.au))}">Annuler</button>` : ''}</li>`).join('')}</ul>`;
 }
 
 function ligneHisto(x) {
@@ -370,93 +536,65 @@ function ligneHisto(x) {
     <span><strong>${esc(x.action)}</strong> ${esc(x.personne)}${det.length ? ', ' + det.join(', ') : ''}</span>
     ${x.remarque ? `<em>${esc(x.remarque)}</em>` : ''}</li>`;
 }
+function htmlHisto() {
+  if (FICHE.historique === null) return '<p class="discret">Chargement de l’historique…</p>';
+  return FICHE.historique.length ? `<ol class="histo">${FICHE.historique.map(ligneHisto).join('')}</ol>`
+    : '<p class="vide">Aucun mouvement enregistré.</p>';
+}
 
 function rendreFiche() {
-  const e = FICHE.equipement, t = FICHE.aujourdhui, nom = memNom();
-  DATA.aujourdhui = t;
-  const r = enRetard(e);
-  let h = `<a data-nav class="retour" href="?vue=liste">Tout le matériel</a>
+  const e = FICHE.equipement, t = FICHE.aujourdhui;
+  app.innerHTML = `<a data-nav class="retour" href="?vue=liste">Tout le matériel</a>
     <header class="fiche-tete"><span class="tag tag-xl">${esc(e.id)}</span>
-      <h1>${esc(e.designation)}</h1><p class="cat">${esc(e.categorie)}</p></header>`;
-
-  if (e.statut === 'Pris') {
-    h += `<section class="etat ${r ? 'is-retard' : 'is-pris'}">
-      <p class="etat-titre">Pris par ${esc(e.emprunteur)}</p>
-      <dl>
-        ${e.datePrise ? `<dt>Depuis le</dt><dd>${frH(e.datePrise)}</dd>` : ''}
-        <dt>Retour prévu</dt><dd>${e.retourPrevu ? fr(e.retourPrevu) + (r ? ' <span class="badge retard">Dépassé</span>' : '') : 'Non précisé'}</dd>
-        ${e.chantier ? `<dt>Chantier / info</dt><dd>${esc(e.chantier)}</dd>` : ''}
-        ${e.remarque ? `<dt>Remarque</dt><dd>${esc(e.remarque)}</dd>` : ''}
-      </dl></section>
-      <form class="action" id="fRendre">
-        <h2>Rendre l’équipement</h2>
-        <label>Rendu par ${selNom('rNom', nom || e.emprunteur)}</label>
-        <label>Remarque <span class="opt">facultatif</span>
-          <textarea id="rRem" rows="2" placeholder="État, problème constaté…"></textarea></label>
-        <button class="btn btn-rendre">Rendre l’équipement</button>
-      </form>`;
-  } else {
-    h += `<section class="etat is-libre"><p class="etat-titre">Disponible à l’atelier</p></section>
-      <form class="action" id="fPrendre">
-        <h2>Prendre l’équipement</h2>
-        <label>Emprunteur ${selNom('pNom', nom)}</label>
-        <label>Chantier / client / info <input id="pChantier" type="text" autocomplete="off"></label>
-        <label>Date de retour prévue <span class="opt">facultatif</span><input id="pRetour" type="date" min="${t}"></label>
-        <label>Remarque <span class="opt">facultatif</span><textarea id="pRem" rows="2"></textarea></label>
-        <button class="btn btn-prendre">Prendre l’équipement</button>
-      </form>`;
-  }
-
-  h += `<section class="bloc"><h2>Réservations</h2>
-    ${FICHE.reservations.length ? `<ul class="resas">${FICHE.reservations.map(x => `<li>
-      <span><strong>${esc(x.personne)}</strong> du ${fr(x.du)} au ${fr(x.au)}${x.chantier ? `, ${esc(x.chantier)}` : ''}
-      ${x.du <= t ? ' <span class="badge resa">En cours</span>' : ''}</span>
-      <button type="button" class="btn-lien" data-annuler="${esc(x.ref)}">Annuler</button></li>`).join('')}</ul>`
-      : '<p class="vide" style="margin-bottom:10px">Aucune réservation à venir.</p>'}
-    <details class="reserver"><summary>Réserver pour une date</summary>
-      <form id="fReserver">
-        <label>Réservé par ${selNom('vNom', nom)}</label>
-        <div class="deux">
-          <label>Du <input id="vDu" type="date" min="${t}" required></label>
-          <label>Au <input id="vAu" type="date" min="${t}" required></label>
-        </div>
-        <label>Chantier / client / info <input id="vChantier" type="text" autocomplete="off"></label>
-        <button class="btn btn-resa">Réserver</button>
-      </form></details></section>
-    <section class="bloc"><h2>Derniers mouvements</h2>
-      ${FICHE.historique.length ? `<ol class="histo">${FICHE.historique.map(ligneHisto).join('')}</ol>`
-        : '<p class="vide">Aucun mouvement enregistré.</p>'}</section>`;
-
-  app.innerHTML = h;
-
-  $('#fPrendre')?.addEventListener('submit', ev => {
-    ev.preventDefault();
-    const n = $('#pNom').value;
-    envoyer({ action: 'prendre', id: e.id, personne: n, chantier: $('#pChantier').value.trim(),
-      retourPrevu: $('#pRetour').value, remarque: $('#pRem').value.trim() }, 'Équipement pris', n);
-  });
-  $('#fRendre')?.addEventListener('submit', ev => {
-    ev.preventDefault();
-    const n = $('#rNom').value;
-    envoyer({ action: 'rendre', id: e.id, personne: n, remarque: $('#rRem').value.trim() }, 'Équipement rendu', n);
-  });
+      <h1>${esc(e.designation)}</h1><p class="cat">${esc(e.categorie)}</p></header>
+    <div id="zEtat">${htmlEtat()}</div>
+    <section class="bloc"><h2>Réservations</h2>
+      <div id="zResas">${htmlResas()}</div>
+      <details class="reserver"><summary>Réserver pour une date</summary>
+        <form id="fReserver">
+          ${champPour('vPour', 'Réserver')}
+          <div class="deux">
+            <label>Du <input id="vDu" type="date" min="${t}" required></label>
+            <label>Au <input id="vAu" type="date" min="${t}" required></label>
+          </div>
+          <label>Chantier / client / info <input id="vChantier" type="text" autocomplete="off"></label>
+          <button class="btn btn-resa">Réserver</button>
+        </form></details></section>
+    <section class="bloc"><h2>Derniers mouvements</h2><div id="zHisto">${htmlHisto()}</div></section>`;
+  lierEtat();
+  lierResas();
   $('#vDu').addEventListener('change', ev => {
     $('#vAu').min = ev.target.value || t;
     if (!$('#vAu').value || $('#vAu').value < ev.target.value) $('#vAu').value = ev.target.value;
   });
   $('#fReserver').addEventListener('submit', ev => {
     ev.preventDefault();
-    const n = $('#vNom').value;
-    envoyer({ action: 'reserver', id: e.id, personne: n, du: $('#vDu').value, au: $('#vAu').value,
-      chantier: $('#vChantier').value.trim() }, 'Réservation enregistrée', n);
+    envoyer({ action: 'reserver', id: e.id, pour: valPour('vPour'), du: $('#vDu').value, au: $('#vAu').value,
+      chantier: $('#vChantier').value.trim() }, 'Réservation enregistrée');
   });
-  app.querySelectorAll('[data-annuler]').forEach(b => b.addEventListener('click', async () => {
-    const n = await demanderNom('Annuler cette réservation ?');
-    if (n) envoyer({ action: 'annuler', id: e.id, ref: b.dataset.annuler, personne: n }, 'Réservation annulée', n);
+}
+
+function lierEtat() {
+  const id = FICHE.equipement.id;
+  $('#fPrendre')?.addEventListener('submit', ev => {
+    ev.preventDefault();
+    envoyer({ action: 'prendre', id, pour: valPour('pPour'), chantier: $('#pChantier').value.trim(),
+      retourPrevu: $('#pRetour').value, remarque: $('#pRem').value.trim() }, 'Équipement pris');
+  });
+  $('#fRendre')?.addEventListener('submit', ev => {
+    ev.preventDefault();
+    envoyer({ action: 'rendre', id, remarque: $('#rRem').value.trim() }, 'Équipement rendu');
+  });
+}
+
+function lierResas() {
+  app.querySelectorAll('[data-annuler]').forEach(b => b.addEventListener('click', () => {
+    if (confirm('Annuler la réservation de ' + b.dataset.txt + ' ?'))
+      envoyer({ action: 'annuler', id: FICHE.equipement.id, ref: b.dataset.annuler }, 'Réservation annulée');
   }));
 }
 
-async function envoyer(params, msg, nom) {
+async function envoyer(params, msg) {
   if (occupe) return;
   occupe = true;
   app.querySelectorAll('button').forEach(b => b.disabled = true);
@@ -467,31 +605,19 @@ async function envoyer(params, msg, nom) {
       r = await api({ ...params, confirm: true });
       if (r.warning) throw new Error(r.warning);
     }
-    if (nom) memNom(nom);
+    DATA = r.etat;
+    stocker('pm_cache', DATA);
+    majCompteur();
+    FICHE = r.fiche;
     toast(msg);
-    await charger();
-    FICHE = await api({ action: 'fiche', id: params.id });
     rendreFiche();
     window.scrollTo(0, 0);
   } catch (err) {
-    toast(err.message, true);
+    if (S) toast(err.message, true);
   } finally {
     occupe = false;
     app.querySelectorAll('button').forEach(b => b.disabled = false);
   }
-}
-
-function demanderNom(titre) {
-  return new Promise(res => {
-    const d = $('#dlg');
-    d.innerHTML = `<form method="dialog"><p>${esc(titre)}</p>
-      <label>Votre nom ${selNom('dNom', memNom())}</label>
-      <div class="dlg-btns"><button value="non" formnovalidate class="btn-lien">Retour</button>
-      <button value="oui" class="btn">Confirmer l’annulation</button></div></form>`;
-    d.returnValue = '';
-    d.onclose = () => res(d.returnValue === 'oui' ? $('#dNom').value : null);
-    d.showModal();
-  });
 }
 
 demarrer();
