@@ -503,7 +503,15 @@ function htmlEtat() {
         <label>Remarque <span class="opt">facultatif</span>
           <textarea id="rRem" rows="2" placeholder="État, problème constaté…"></textarea></label>
         <button class="btn btn-rendre">Rendre l’équipement</button>
-      </form>`;
+      </form>
+      ${e.emprunteur === S.nom || admin() ? `<details class="reserver" style="margin-top:16px"${r ? ' open' : ''}>
+        <summary>Modifier la date de retour</summary>
+        <form id="fProlonger">
+          ${r ? `<p class="qui txt-retard">La date prévue est dépassée : indiquez une nouvelle date pour ne plus être en retard.</p>` : ''}
+          <label>Nouvelle date de retour <input id="mRetour" type="date" min="${t}" required></label>
+          <label>Motif <span class="opt">facultatif</span><input id="mRem" type="text" autocomplete="off" placeholder="Chantier prolongé…"></label>
+          <button class="btn btn-resa">Enregistrer la nouvelle date</button>
+        </form></details>` : ''}`;
   }
   return `<section class="etat is-libre"><p class="etat-titre">Disponible à l’atelier</p></section>
     <form class="action" id="fPrendre">
@@ -580,6 +588,11 @@ function lierEtat() {
     ev.preventDefault();
     envoyer({ action: 'prendre', id, pour: valPour('pPour'), chantier: $('#pChantier').value.trim(),
       retourPrevu: $('#pRetour').value, remarque: $('#pRem').value.trim() }, 'Équipement pris');
+  });
+  $('#fProlonger')?.addEventListener('submit', ev => {
+    ev.preventDefault();
+    envoyer({ action: 'prolonger', id, retourPrevu: $('#mRetour').value, remarque: $('#mRem').value.trim() },
+      'Date de retour modifiée');
   });
   $('#fRendre')?.addEventListener('submit', ev => {
     ev.preventDefault();
