@@ -78,7 +78,7 @@ h2{font-size:1.3rem;margin-bottom:8px}
 .is-pris{border-left-color:var(--pris)}
 .is-retard{border-left-color:var(--retard)}
 .is-resa{border-left-color:var(--resa)}
-.badge{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.84rem;font-weight:600}
+.badge{display:inline-block;padding:1px 9px;border-radius:999px;font-size:.84rem;font-weight:600;white-space:nowrap}
 .badge.retard{background:#F8DAD7;color:var(--retard)}
 .badge.resa{background:#DCE6F5;color:var(--resa)}
 .badge.moi-b{background:#FCEFC7;color:#6B5200}
@@ -101,7 +101,8 @@ input[type=search]{margin:0 0 10px}
 .filtre{border:1px solid #AEB8C1;background:var(--papier);border-radius:999px;padding:6px 14px;
   font:500 .95rem 'Barlow',sans-serif;cursor:pointer;color:var(--encre)}
 .filtre.on{background:var(--encre);color:#fff;border-color:var(--encre)}
-.deux{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.deux{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+input[type=date]{min-width:0}
 .btn{display:block;width:100%;margin-top:16px;padding:14px;border:0;border-radius:var(--r);
   font:700 1.12rem 'Barlow Condensed',sans-serif;color:#fff;background:var(--encre);cursor:pointer}
 .btn-prendre{background:var(--pris)}
@@ -158,6 +159,42 @@ dt{color:var(--gris)} dd{margin:0}
   border-left:6px solid var(--retard);border-radius:var(--r)}
 .erreur .btn{width:auto;padding:10px 18px}
 
+/* Certificats */
+.badge.cert-ok{background:#DDEFE3;color:var(--libre)}
+.badge.cert-bientot{background:#FBE7CF;color:#8A4B0B}
+.badge.cert-expire{background:#F8DAD7;color:var(--retard)}
+.cert{margin-top:16px;padding:12px 16px;background:var(--papier);border:1px solid var(--trait);
+  border-left:6px solid var(--libre);border-radius:var(--r)}
+.cert.cert-bientot{border-left-color:var(--pris)}
+.cert.cert-expire{border-left-color:var(--retard)}
+.cert-titre{margin:0;font-weight:600}
+.cert-bientot .cert-titre{color:#8A4B0B}
+.cert-expire .cert-titre{color:var(--retard)}
+.lien-cert{display:inline-block;margin-top:8px;color:var(--resa);font-weight:600}
+
+/* Administration */
+a.filtre{text-decoration:none;display:inline-block}
+.ligne-btn{width:100%;text-align:left;background:none;border:0;border-left:5px solid var(--trait);
+  font:inherit;color:inherit;cursor:pointer}
+.ligne-simple{display:block}
+.adm-barre{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.adm-barre input{margin:0;flex:1 1 200px;min-width:0}
+.btn-petit{width:auto;margin:0;padding:10px 14px;font-size:1rem;white-space:nowrap}
+.case{display:flex;gap:8px;align-items:center;font-weight:500}
+.case input{width:auto;margin:0}
+fieldset{border:1px solid var(--trait);border-radius:var(--r);margin:16px 0 0;padding:4px 12px 12px;min-width:0}
+legend{font-weight:600;padding:0 4px}
+.config h2{margin:24px 0 0}
+dialog{border:0;border-radius:var(--r);padding:20px;width:calc(100% - 24px);max-width:520px;
+  max-height:calc(100% - 24px);color:var(--encre)}
+dialog::backdrop{background:rgba(28,38,48,.55)}
+dialog h2{margin:0 0 4px}
+.dlg-btns{display:flex;justify-content:flex-end;align-items:center;gap:10px;margin-top:18px}
+.dlg-btns .btn{width:auto;margin:0;padding:10px 18px}
+.dlg-btns .btn-lien{color:var(--gris)}
+.dlg-err{color:var(--retard);font-weight:600;margin:12px 0 0}
+.dlg-err:empty{display:none}
+
 :focus-visible{outline:3px solid var(--resa);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -173,17 +210,18 @@ dt{color:var(--gris)} dd{margin:0}
     <nav id="nav" hidden>
       <button class="tab" data-tab="accueil" type="button">Empruntés<span class="compteur" id="nbPris"></span></button>
       <button class="tab" data-tab="liste" type="button">Tout le matériel</button>
-      <a class="tab" id="lienQr" href="qrcodes.html" hidden>Étiquettes</a>
+      <button class="tab" data-tab="admin" type="button" id="tabAdmin" hidden>Admin</button>
     </nav>
     <div class="connexion-vide" id="cxVide"></div>
   </div>
 </header>
 <main id="app"></main>
 <div id="toast" role="status" aria-live="polite"></div>
+<dialog id="dlg"></dialog>
 
 <script>
-let S = null, DATA = null, FICHE = null, occupe = false;
-const st = { vue: '', id: '', q: '', cat: '' };
+let S = null, DATA = null, FICHE = null, ADM = null, occupe = false;
+const st = { vue: '', id: '', q: '', cat: '', adm: 'equipements', admQ: '', voirRetires: false };
 const $ = s => document.querySelector(s);
 const app = $('#app');
 
@@ -232,7 +270,7 @@ function erreur(err) {
 function majEntete() {
   $('#nav').hidden = !S;
   $('#cxVide').hidden = !!S;
-  $('#lienQr').hidden = !admin();
+  $('#tabAdmin').hidden = !admin();
   $('#moi').innerHTML = S
     ? `<strong>${esc(S.nom)}</strong>${admin() ? ' (admin)' : ''}<button class="btn-deco" type="button" id="btnDeco">Se déconnecter</button>`
     : '';
@@ -240,7 +278,8 @@ function majEntete() {
 }
 
 function deconnecter(msg) {
-  S = null; DATA = null; FICHE = null;
+  if ($('#dlg').open) $('#dlg').close();
+  S = null; DATA = null; FICHE = null; ADM = null;
   stocker('pm_session', null);
   stocker('pm_cache', null);
   majEntete();
@@ -289,10 +328,13 @@ function router() {
   const p = new URLSearchParams(location.search);
   const id = p.get('id');
   if (id) { st.vue = 'fiche'; st.id = id; majTabs(null); afficherFiche(id); return; }
-  st.vue = p.get('vue') === 'liste' ? 'liste' : 'accueil';
+  const v = p.get('vue');
+  st.vue = v === 'liste' ? 'liste' : (v === 'admin' && admin() ? 'admin' : 'accueil');
   st.id = '';
   majTabs(st.vue);
-  st.vue === 'liste' ? vueListe() : vueAccueil();
+  if (st.vue === 'liste') vueListe();
+  else if (st.vue === 'admin') vueAdmin();
+  else vueAccueil();
 }
 
 // Mise à jour silencieuse après réception de données fraîches
@@ -315,7 +357,7 @@ function majTabs(vue) {
 }
 
 document.querySelectorAll('.tab[data-tab]').forEach(b =>
-  b.addEventListener('click', () => aller(b.dataset.tab === 'liste' ? { vue: 'liste' } : {})));
+  b.addEventListener('click', () => aller(b.dataset.tab === 'accueil' ? {} : { vue: b.dataset.tab })));
 
 document.addEventListener('click', ev => {
   const a = ev.target.closest('a[data-nav]');
@@ -425,10 +467,12 @@ function ligneEq(e) {
   const etat = e.statut === 'Pris'
     ? `<span class="st-pris">Pris par ${esc(e.emprunteur)}</span>${r ? ' <span class="badge retard">En retard</span>' : ''}`
     : `<span class="st-libre">Libre</span>`;
+  const c = certif(e);
+  const badgeCert = c && c.cls !== 'ok' ? ` <span class="badge cert-${c.cls}">${c.court}</span>` : '';
   return `<li><a data-nav class="ligne ${cls}" href="?id=${encodeURIComponent(e.id)}">
     <span class="tag">${esc(e.id)}</span>
     <span class="l-main"><span class="l-titre">${esc(e.designation)}</span>
-      <span class="l-meta">${etat}</span></span>
+      <span class="l-meta">${etat}${badgeCert}</span></span>
     <span class="l-fin">${resa ? `Réservé à partir du ${fr(resa.du)}` : ''}</span></a></li>`;
 }
 
@@ -555,6 +599,7 @@ function rendreFiche() {
   app.innerHTML = `<a data-nav class="retour" href="?vue=liste">Tout le matériel</a>
     <header class="fiche-tete"><span class="tag tag-xl">${esc(e.id)}</span>
       <h1>${esc(e.designation)}</h1><p class="cat">${esc(e.categorie)}</p></header>
+    ${htmlCertif(e)}
     <div id="zEtat">${htmlEtat()}</div>
     <section class="bloc"><h2>Réservations</h2>
       <div id="zResas">${htmlResas()}</div>
@@ -631,6 +676,237 @@ async function envoyer(params, msg) {
     occupe = false;
     app.querySelectorAll('button').forEach(b => b.disabled = false);
   }
+}
+
+// ---------- Certificats de contrôle ----------
+function joursEntre(a, b) { return Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 864e5); }
+function certif(e) {
+  if (!e || !e.echeance || !DATA) return null;
+  const j = joursEntre(e.echeance, DATA.aujourdhui), seuil = DATA.seuilCertif || 30;
+  if (j < 0) return { cls: 'expire', court: 'Certificat expiré', long: `expiré depuis le ${fr(e.echeance)}` };
+  if (j <= seuil) return { cls: 'bientot',
+    court: j === 0 ? 'Certificat : expire aujourd’hui' : `Certificat : expire dans ${j} j`,
+    long: `expire le ${fr(e.echeance)} (${j === 0 ? 'aujourd’hui' : 'dans ' + j + ' jour' + (j > 1 ? 's' : '')})` };
+  return { cls: 'ok', court: 'Certificat valide', long: `valide jusqu’au ${fr(e.echeance)}` };
+}
+function htmlCertif(e) {
+  const c = certif(e);
+  if (!c) return '';
+  const lien = /^https:\/\//.test(e.lienCertificat || '') ? e.lienCertificat : '';
+  return `<section class="cert cert-${c.cls}">
+    <p class="cert-titre">Certificat de contrôle ${c.long}</p>
+    <dl>
+      ${e.dernierControle ? `<dt>Dernier contrôle</dt><dd>${fr(e.dernierControle)}</dd>` : ''}
+      <dt>Échéance</dt><dd>${fr(e.echeance)}</dd>
+      ${e.organisme ? `<dt>Organisme</dt><dd>${esc(e.organisme)}</dd>` : ''}
+      ${e.numCertificat ? `<dt>N° de certificat</dt><dd>${esc(e.numCertificat)}</dd>` : ''}
+    </dl>
+    ${lien ? `<a class="lien-cert" href="${esc(lien)}" target="_blank" rel="noopener">Voir le certificat</a>` : ''}
+  </section>`;
+}
+
+// ---------- Administration ----------
+async function vueAdmin() {
+  app.innerHTML = chargement('Chargement de l’administration…');
+  try { ADM = (await api({ action: 'admin', op: 'lire' })).admin; }
+  catch (err) { if (S) app.innerHTML = erreur(err); return; }
+  if (st.vue === 'admin') rendreAdmin();
+}
+
+function rendreAdmin() {
+  const onglets = [['equipements', 'Équipements'], ['acces', 'Accès'], ['config', 'Configuration']];
+  app.innerHTML = `<section class="bloc"><h2>Administration</h2>
+    <div class="filtres">${onglets.map(([k, l]) =>
+      `<button type="button" class="filtre${st.adm === k ? ' on' : ''}" data-adm="${k}">${l}</button>`).join('')}
+      <a class="filtre" href="qrcodes.html">Étiquettes QR</a></div>
+    <div id="zAdm"></div></section>`;
+  app.querySelectorAll('[data-adm]').forEach(b => b.addEventListener('click', () => {
+    st.adm = b.dataset.adm; st.admQ = ''; rendreAdmin();
+  }));
+  ({ equipements: admEquipements, acces: admAcces, config: admConfig })[st.adm]();
+}
+
+function dialogue(html, enregistrer) {
+  const d = $('#dlg');
+  d.innerHTML = `<form id="fDlg">${html}<p class="dlg-err" id="dlgErr"></p>
+    <div class="dlg-btns"><button type="button" class="btn-lien" id="dlgFermer">Annuler</button>
+    <button class="btn">Enregistrer</button></div></form>`;
+  $('#dlgFermer').addEventListener('click', () => d.close());
+  $('#fDlg').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const b = ev.target.querySelector('.btn');
+    b.disabled = true; b.textContent = 'Enregistrement…'; $('#dlgErr').textContent = '';
+    try { await enregistrer(new FormData(ev.target)); d.close(); }
+    catch (err) { $('#dlgErr').textContent = err.message; b.disabled = false; b.textContent = 'Enregistrer'; }
+  });
+  d.showModal();
+}
+
+async function admEnvoyer(params, msg) {
+  const r = await api(Object.assign({ action: 'admin' }, params));
+  ADM = r.admin;
+  if (r.etat) { DATA = r.etat; stocker('pm_cache', DATA); majCompteur(); }
+  if (r.session) { S = stocker('pm_session', r.session); majEntete(); }
+  toast(msg);
+  rendreAdmin();
+}
+
+// --- Équipements
+function ordreCat(c) { const i = ADM.categories.indexOf(c); return i < 0 ? 99 : i; }
+
+function admEquipements() {
+  $('#zAdm').innerHTML = `<div class="adm-barre">
+      <input id="aq" type="search" placeholder="Rechercher un code ou un nom" value="${esc(st.admQ)}" autocomplete="off" aria-label="Rechercher">
+      <button class="btn btn-petit" type="button" id="nouv">+ Nouvel équipement</button></div>
+    <label class="case" style="margin:10px 0"><input type="checkbox" id="retires"${st.voirRetires ? ' checked' : ''}> Afficher les équipements retirés</label>
+    <ul class="lignes" id="admListe"></ul>`;
+  $('#aq').addEventListener('input', ev => { st.admQ = ev.target.value; listeAdmEq(); });
+  $('#retires').addEventListener('change', ev => { st.voirRetires = ev.target.checked; listeAdmEq(); });
+  $('#nouv').addEventListener('click', () => formEquipement());
+  listeAdmEq();
+}
+
+function listeAdmEq() {
+  const q = norm(st.admQ.trim());
+  const l = ADM.equipements
+    .filter(e => (st.voirRetires || e.actif) && (!q || norm(e.id + ' ' + e.designation).includes(q)))
+    .sort((a, b) => ordreCat(a.categorie) - ordreCat(b.categorie) || a.id.localeCompare(b.id));
+  $('#admListe').innerHTML = l.length ? l.map(e => {
+    const c = certif(e);
+    const cls = !e.actif ? '' : (e.statut === 'Pris' ? 'is-pris' : 'is-libre');
+    return `<li><button type="button" class="ligne ligne-btn ${cls}" data-eq="${esc(e.id)}">
+      <span class="tag">${esc(e.id)}</span>
+      <span class="l-main"><span class="l-titre">${esc(e.designation)}</span>
+        <span class="l-meta">${esc(e.categorie)}${e.actif ? '' : ' · <strong>Retiré</strong>'}${e.statut === 'Pris' ? ' · Pris par ' + esc(e.emprunteur) : ''}</span></span>
+      <span class="l-fin">${c ? `<span class="badge cert-${c.cls}">${c.court}</span>` : ''}</span></button></li>`;
+  }).join('') : '<li class="vide">Aucun équipement.</li>';
+  $('#admListe').querySelectorAll('[data-eq]').forEach(b =>
+    b.addEventListener('click', () => formEquipement(ADM.equipements.find(e => e.id === b.dataset.eq))));
+}
+
+function formEquipement(e) {
+  const v = k => esc(e ? e[k] || '' : '');
+  dialogue(`<h2>${e ? 'Modifier l’équipement' : 'Nouvel équipement'}</h2>
+    ${e && e.statut === 'Pris' ? `<p class="qui">Actuellement pris par <strong>${esc(e.emprunteur)}</strong>.</p>` : ''}
+    <label>ID <span class="opt">${e ? 'non modifiable (imprimé sur le QR code)' : 'sans espace, ex. PAG-E-470'}</span>
+      <input name="id" required value="${v('id')}"${e ? ' readonly' : ''} autocomplete="off" autocapitalize="characters" spellcheck="false"></label>
+    <label>Désignation <input name="designation" required value="${v('designation')}" autocomplete="off"></label>
+    <label>Catégorie <select name="categorie" required>${ADM.categories.map(c =>
+      `<option${e && e.categorie === c ? ' selected' : ''}>${esc(c)}</option>`).join('')}</select></label>
+    <label class="case" style="margin-top:14px"><input type="checkbox" name="actif"${!e || e.actif ? ' checked' : ''}>
+      Visible sur le site <span class="opt">(décocher pour retirer l’équipement)</span></label>
+    <fieldset><legend>Certificat de contrôle <span class="opt">facultatif</span></legend>
+      <div class="deux">
+        <label>Dernier contrôle <input type="date" name="dernierControle" value="${v('dernierControle')}"></label>
+        <label>Échéance <input type="date" name="echeance" value="${v('echeance')}"></label>
+      </div>
+      <label>Organisme <input name="organisme" value="${v('organisme')}" autocomplete="off"></label>
+      <label>N° de certificat <input name="numCertificat" value="${v('numCertificat')}" autocomplete="off"></label>
+      <label>Lien vers le certificat <input type="url" name="lienCertificat" value="${v('lienCertificat')}" placeholder="https://drive.google.com/…"></label>
+    </fieldset>`,
+    async fd => {
+      const data = Object.fromEntries(fd);
+      data.actif = fd.has('actif');
+      await admEnvoyer({ op: 'equipement', mode: e ? 'modifier' : 'creer', data }, e ? 'Équipement mis à jour' : 'Équipement créé');
+    });
+}
+
+// --- Accès
+function admAcces() {
+  $('#zAdm').innerHTML = `<div class="adm-barre">
+      <input id="aq" type="search" placeholder="Rechercher un nom ou un identifiant" value="${esc(st.admQ)}" autocomplete="off" aria-label="Rechercher">
+      <button class="btn btn-petit" type="button" id="nouv">+ Nouvel accès</button></div>
+    <ul class="lignes" id="admListe" style="margin-top:10px"></ul>`;
+  $('#aq').addEventListener('input', ev => { st.admQ = ev.target.value; listeAdmAcces(); });
+  $('#nouv').addEventListener('click', () => formAcces());
+  listeAdmAcces();
+}
+
+function listeAdmAcces() {
+  const q = norm(st.admQ.trim());
+  const l = ADM.acces.filter(a => !q || norm(a.nom + ' ' + a.identifiant).includes(q))
+    .sort((a, b) => (b.actif - a.actif) || a.nom.localeCompare(b.nom));
+  $('#admListe').innerHTML = l.length ? l.map(a => {
+    const infos = [esc(a.identifiant), a.role === 'Admin' ? '<strong>Admin</strong>' : '',
+      a.email ? esc(a.email) : 'pas de mail', a.aCode ? '' : '<strong>sans code</strong>', a.actif ? '' : '<strong>inactif</strong>'].filter(Boolean);
+    return `<li><button type="button" class="ligne ligne-btn ligne-simple ${a.actif ? 'is-libre' : ''}" data-acc="${esc(a.nom)}">
+      <span class="l-titre">${esc(a.nom)}</span><span class="l-meta">${infos.join(' · ')}</span></button></li>`;
+  }).join('') : '<li class="vide">Aucun accès.</li>';
+  $('#admListe').querySelectorAll('[data-acc]').forEach(b =>
+    b.addEventListener('click', () => formAcces(ADM.acces.find(a => a.nom === b.dataset.acc))));
+}
+
+function formAcces(a) {
+  const v = k => esc(a ? a[k] || '' : '');
+  const moi = a && a.nom === S.nom;
+  dialogue(`<h2>${a ? 'Modifier l’accès' : 'Nouvel accès'}</h2>
+    <label>Nom <span class="opt">${a ? 'non modifiable' : 'tel qu’il apparaîtra dans l’outil, ex. A.DUPONT'}</span>
+      <input name="nom" required value="${v('nom')}"${a ? ' readonly' : ''} autocomplete="off"></label>
+    <label>Identifiant de connexion <span class="opt">sans espace</span>
+      <input name="identifiant" required value="${v('identifiant')}" autocomplete="off" autocapitalize="none" spellcheck="false"></label>
+    <label>Adresse mail <span class="opt">pour les relances et notifications</span>
+      <input type="email" name="email" value="${v('email')}" autocomplete="off"></label>
+    <label>Rôle <select name="role"${moi ? ' disabled' : ''}>
+      <option${!a || a.role !== 'Admin' ? ' selected' : ''}>Utilisateur</option>
+      <option${a && a.role === 'Admin' ? ' selected' : ''}>Admin</option></select></label>
+    ${moi ? '<input type="hidden" name="role" value="Admin">' : ''}
+    <label class="case" style="margin-top:14px"><input type="checkbox" name="actif"${!a || a.actif ? ' checked' : ''}${moi ? ' disabled' : ''}> Accès actif</label>
+    ${moi ? '<input type="hidden" name="actif" value="on">' : ''}
+    <label>${a && a.aCode ? 'Nouveau code' : 'Code'} <span class="opt">${a && a.aCode
+      ? 'laisser vide pour garder le code actuel'
+      : '4 caractères minimum ; vide = la personne ne peut pas se connecter'}</span>
+      <input name="code" autocomplete="off" spellcheck="false"></label>`,
+    async fd => {
+      const data = Object.fromEntries(fd);
+      data.actif = fd.has('actif');
+      await admEnvoyer({ op: 'acces', mode: a ? 'modifier' : 'creer', data }, a ? 'Accès mis à jour' : 'Accès créé');
+    });
+}
+
+// --- Configuration
+const CHAMPS_CONF = [
+  { titre: 'Relances d’emprunt' },
+  { nom: 'Relances actives', type: 'ouinon', label: 'Relances par mail actives' },
+  { nom: 'Relance après (jours)', type: 'nombre', label: 'Relancer après (jours, si pas de date de retour)' },
+  { nom: 'Intervalle entre relances (jours)', type: 'nombre', label: 'Intervalle entre deux relances (jours)' },
+  { titre: 'Certificats de contrôle' },
+  { nom: 'Rappels certificats actifs', type: 'ouinon', label: 'Rappels de fin de validité actifs' },
+  { nom: 'Rappel certificat avant échéance (jours)', type: 'nombre', label: 'Premier rappel avant l’échéance (jours)' },
+  { nom: 'Destinataires rappels certificats', type: 'emails', label: 'Destinataires des rappels', aide: 'adresses séparées par des virgules' },
+  { titre: 'Site' },
+  { nom: 'Adresse du site', type: 'url', label: 'Adresse du site (utilisée dans les liens des mails)' }
+];
+
+function admConfig() {
+  const val = n => { const p = ADM.params.find(x => x.nom === n); return p ? String(p.valeur) : ''; };
+  const champs = CHAMPS_CONF.map((c, i) => {
+    if (c.titre) return `<h2>${c.titre}</h2>`;
+    if (c.type === 'ouinon') return `<label class="case" style="margin-top:12px"><input type="checkbox" id="c${i}"${val(c.nom).toLowerCase() !== 'non' ? ' checked' : ''}> ${c.label}</label>`;
+    if (c.type === 'emails') return `<label>${c.label} <span class="opt">${c.aide}</span><textarea id="c${i}" rows="2">${esc(val(c.nom))}</textarea></label>`;
+    return `<label>${c.label}<input id="c${i}" type="${c.type === 'nombre' ? 'number' : 'url'}"${c.type === 'nombre' ? ' min="1" max="365" required' : ' required'} value="${esc(val(c.nom))}"></label>`;
+  }).join('');
+  $('#zAdm').innerHTML = `<form class="action config" id="fConf">
+    <h2 style="margin-top:0">Catégories</h2>
+    <label>Une catégorie par ligne <span class="opt">une catégorie encore utilisée ne peut pas être supprimée</span>
+      <textarea id="cCats" rows="4">${esc(ADM.categories.join('\n'))}</textarea></label>
+    ${champs}
+    <p class="dlg-err" id="confErr"></p>
+    <button class="btn">Enregistrer la configuration</button></form>`;
+  $('#fConf').addEventListener('submit', async ev => {
+    ev.preventDefault();
+    const b = ev.target.querySelector('.btn');
+    b.disabled = true; $('#confErr').textContent = '';
+    const params = {};
+    CHAMPS_CONF.forEach((c, i) => {
+      if (!c.nom) return;
+      const el = $('#c' + i);
+      params[c.nom] = c.type === 'ouinon' ? (el.checked ? 'Oui' : 'Non') : el.value.trim();
+    });
+    try {
+      await admEnvoyer({ op: 'config', categories: $('#cCats').value.split('\n').map(x => x.trim()).filter(Boolean), params },
+        'Configuration enregistrée');
+    } catch (err) { $('#confErr').textContent = err.message; b.disabled = false; }
+  });
 }
 
 demarrer();
