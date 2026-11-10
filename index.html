@@ -5,8 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <meta name="theme-color" content="#1C2630">
 <title>Matériel atelier – Paganetti Thermique</title>
-<link rel="icon" type="image/png" href="icon-192.png">
-<link rel="apple-touch-icon" href="icon-192.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600&family=Barlow+Condensed:wght@600;700&display=swap" rel="stylesheet">
@@ -32,15 +30,18 @@ body{margin:0;font-size:16px;line-height:1.45;background:var(--fond);padding-bot
 .moi{margin-left:auto;font-size:.88rem;color:#C3CDD6;display:flex;align-items:baseline;gap:8px}
 .moi strong{color:#fff;font-weight:600}
 .btn-deco{border:0;background:none;color:var(--etiquette);font:600 .88rem 'Barlow',sans-serif;cursor:pointer;padding:4px 0}
-nav{display:flex;gap:2px;margin-top:8px}
+nav{display:flex;gap:0;margin-top:8px;overflow-x:auto;scrollbar-width:none}
+nav::-webkit-scrollbar{display:none}
 nav[hidden]{display:none}
 .tab{appearance:none;border:0;background:transparent;color:#C3CDD6;font:600 1rem 'Barlow',sans-serif;
-  padding:10px 12px 9px;border-bottom:3px solid transparent;cursor:pointer;text-decoration:none}
+  padding:10px 9px 9px;border-bottom:3px solid transparent;cursor:pointer;text-decoration:none;white-space:nowrap;flex:0 0 auto}
 .tab.on{color:#fff;border-bottom-color:var(--etiquette)}
+@media (max-width:440px){.tab{font-size:.9rem;padding:10px 6px 9px}.compteur{margin-left:3px}}
 .tab[hidden]{display:none}
 .compteur{display:inline-block;min-width:1.5em;padding:0 .4em;margin-left:4px;border-radius:999px;
   background:var(--etiquette);color:#2A2100;font-size:.8rem;text-align:center}
 .compteur:empty{display:none}
+.compteur.alerte{background:var(--retard);color:#fff}
 .connexion-vide{height:8px}
 
 main{max-width:760px;margin:0 auto;padding:8px 16px 56px}
@@ -197,6 +198,14 @@ dialog h2{margin:0 0 4px}
 .dlg-err{color:var(--retard);font-weight:600;margin:12px 0 0}
 .dlg-err:empty{display:none}
 
+/* Mon suivi */
+.dot>summary{list-style:none}
+.dot>summary::-webkit-details-marker{display:none}
+.dot[open]>summary{background:#F4F6F8}
+.dot-detail{padding:4px 14px 14px 22px;border-left:5px solid var(--trait)}
+.dot-detail dl{margin-top:6px}
+.sans-ech{color:var(--gris);font-size:.88rem}
+
 :focus-visible{outline:3px solid var(--resa);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -212,6 +221,7 @@ dialog h2{margin:0 0 4px}
     <nav id="nav" hidden>
       <button class="tab" data-tab="accueil" type="button">Empruntés<span class="compteur" id="nbPris"></span></button>
       <button class="tab" data-tab="liste" type="button">Tout le matériel</button>
+      <button class="tab" data-tab="suivi" type="button" id="tabSuivi" hidden>Mon suivi<span class="compteur alerte" id="nbSuivi"></span></button>
       <button class="tab" data-tab="admin" type="button" id="tabAdmin" hidden>Admin</button>
     </nav>
     <div class="connexion-vide" id="cxVide"></div>
@@ -223,7 +233,7 @@ dialog h2{margin:0 0 4px}
 
 <script>
 let S = null, DATA = null, FICHE = null, ADM = null, occupe = false;
-const st = { vue: '', id: '', q: '', cat: '', adm: 'equipements', admQ: '', voirRetires: false };
+const st = { vue: '', id: '', q: '', cat: '', qs: '', adm: 'equipements', admQ: '', admTech: '', voirRetires: false };
 const $ = s => document.querySelector(s);
 const app = $('#app');
 
@@ -324,6 +334,9 @@ async function charger() {
 }
 function majCompteur() {
   $('#nbPris').textContent = DATA ? (DATA.equipements.filter(e => e.statut === 'Pris').length || '') : '';
+  const dots = (DATA && DATA.mesDotations) || [];
+  $('#tabSuivi').hidden = !dots.length;
+  $('#nbSuivi').textContent = dots.filter(d => { const c = certif(d); return c && c.cls !== 'ok'; }).length || '';
 }
 
 function router() {
@@ -331,10 +344,11 @@ function router() {
   const id = p.get('id');
   if (id) { st.vue = 'fiche'; st.id = id; majTabs(null); afficherFiche(id); return; }
   const v = p.get('vue');
-  st.vue = v === 'liste' ? 'liste' : (v === 'admin' && admin() ? 'admin' : 'accueil');
+  st.vue = v === 'liste' ? 'liste' : v === 'suivi' ? 'suivi' : (v === 'admin' && admin() ? 'admin' : 'accueil');
   st.id = '';
   majTabs(st.vue);
   if (st.vue === 'liste') vueListe();
+  else if (st.vue === 'suivi') vueSuivi();
   else if (st.vue === 'admin') vueAdmin();
   else vueAccueil();
 }
@@ -343,6 +357,7 @@ function router() {
 function rafraichir() {
   if (st.vue === 'accueil') vueAccueil();
   else if (st.vue === 'liste') remplirListe();
+  else if (st.vue === 'suivi') remplirSuivi();
 }
 
 function aller(params) {
@@ -371,7 +386,7 @@ window.addEventListener('popstate', () => { if (S) router(); });
 
 // Retour sur l'onglet : on rafraîchit en arrière-plan
 document.addEventListener('visibilitychange', () => {
-  if (!document.hidden && S && (st.vue === 'accueil' || st.vue === 'liste')) charger().then(rafraichir).catch(() => {});
+  if (!document.hidden && S && ['accueil', 'liste', 'suivi'].includes(st.vue)) charger().then(rafraichir).catch(() => {});
 });
 
 async function demarrer() {
@@ -716,7 +731,7 @@ async function vueAdmin() {
 }
 
 function rendreAdmin() {
-  const onglets = [['equipements', 'Équipements'], ['acces', 'Accès'], ['config', 'Configuration']];
+  const onglets = [['equipements', 'Équipements'], ['dotations', 'Dotations'], ['acces', 'Accès'], ['config', 'Configuration']];
   app.innerHTML = `<section class="bloc"><h2>Administration</h2>
     <div class="filtres">${onglets.map(([k, l]) =>
       `<button type="button" class="filtre${st.adm === k ? ' on' : ''}" data-adm="${k}">${l}</button>`).join('')}
@@ -725,7 +740,7 @@ function rendreAdmin() {
   app.querySelectorAll('[data-adm]').forEach(b => b.addEventListener('click', () => {
     st.adm = b.dataset.adm; st.admQ = ''; rendreAdmin();
   }));
-  ({ equipements: admEquipements, acces: admAcces, config: admConfig })[st.adm]();
+  ({ equipements: admEquipements, dotations: admDotations, acces: admAcces, config: admConfig })[st.adm]();
 }
 
 function dialogue(html, enregistrer) {
@@ -874,7 +889,10 @@ const CHAMPS_CONF = [
   { titre: 'Certificats de contrôle' },
   { nom: 'Rappels certificats actifs', type: 'ouinon', label: 'Rappels de fin de validité actifs' },
   { nom: 'Rappel certificat avant échéance (jours)', type: 'nombre', label: 'Premier rappel avant l’échéance (jours)' },
-  { nom: 'Destinataires rappels certificats', type: 'emails', label: 'Destinataires des rappels', aide: 'adresses séparées par des virgules' },
+  { nom: 'Destinataires rappels certificats', type: 'emails', label: 'Destinataires des rappels (matériel commun)', aide: 'adresses séparées par des virgules' },
+  { titre: 'Dotations (équipements attitrés)' },
+  { nom: 'Copie rappels dotations', type: 'emails', label: 'Destinataires du récapitulatif des rappels', aide: 'en plus du technicien concerné' },
+  { nom: 'Intervalle rappels contrôles en retard (jours)', type: 'nombre', label: 'Relancer un contrôle en retard tous les (jours)' },
   { titre: 'Site' },
   { nom: 'Adresse du site', type: 'url', label: 'Adresse du site (utilisée dans les liens des mails)' }
 ];
@@ -909,6 +927,136 @@ function admConfig() {
         'Configuration enregistrée');
     } catch (err) { $('#confErr').textContent = err.message; b.disabled = false; }
   });
+}
+
+// ---------- Mon suivi d'équipement (dotations) ----------
+function texteControle(d) {
+  const c = certif(d);
+  if (!c) return '';
+  if (c.cls === 'expire') return 'Contrôle en retard';
+  if (c.cls === 'ok') return 'À jour';
+  const j = joursEntre(d.echeance, DATA.aujourdhui);
+  return j === 0 ? 'Contrôle aujourd’hui' : `Contrôle sous ${j} j`;
+}
+function vueSuivi() {
+  const l = (DATA && DATA.mesDotations) || [];
+  app.innerHTML = `<section class="bloc"><h2>Mon suivi d’équipement</h2>
+    <p class="resume">Les équipements qui vous sont attribués et leurs contrôles périodiques. Touchez une ligne pour voir le détail.</p>
+    ${l.length > 4 ? `<input id="qs" type="search" placeholder="Rechercher un équipement" value="${esc(st.qs)}" autocomplete="off" aria-label="Rechercher">` : ''}
+    <ul class="lignes" id="listeSuivi"></ul></section>`;
+  $('#qs')?.addEventListener('input', ev => { st.qs = ev.target.value; remplirSuivi(); });
+  remplirSuivi();
+}
+
+function remplirSuivi() {
+  const el = $('#listeSuivi');
+  if (!el) return;
+  const q = norm(st.qs.trim());
+  const l = ((DATA && DATA.mesDotations) || [])
+    .filter(d => !q || norm([d.id, d.designation, d.numSerie, d.organisme, d.categorie].join(' ')).includes(q));
+  el.innerHTML = l.length ? l.map(d => {
+    const c = certif(d);
+    const cls = !c ? '' : c.cls === 'expire' ? 'is-retard' : c.cls === 'bientot' ? 'is-pris' : 'is-libre';
+    const lien = /^https:\/\//.test(d.lienCertificat || '') ? d.lienCertificat : '';
+    const badge = !c ? '<span class="sans-ech">Échéance non renseignée</span>'
+      : c.cls === 'expire' ? '<span class="badge cert-expire">Contrôle en retard</span>'
+      : c.cls === 'bientot' ? `<span class="badge cert-bientot">${texteControle(d)}</span>`
+      : '<span class="badge cert-ok">À jour</span>';
+    return `<li><details class="dot"><summary class="ligne ${cls}">
+        <span class="tag">${esc(d.id)}</span>
+        <span class="l-main"><span class="l-titre">${esc(d.designation)}</span>
+          <span class="l-meta">${[d.numSerie ? 'N° série ' + esc(d.numSerie) : '', d.organisme ? esc(d.organisme) : ''].filter(Boolean).join(' · ')}</span></span>
+        <span class="l-fin">${badge}</span></summary>
+      <div class="dot-detail ${cls}">
+        ${c ? `<p class="cert-titre" style="margin:8px 0 0">${c.cls === 'expire' ? 'Contrôle en retard : échéance dépassée le ' + fr(d.echeance)
+          : 'Prochain contrôle avant le ' + fr(d.echeance)}</p>` : ''}
+        <dl>
+          ${d.categorie ? `<dt>Catégorie</dt><dd>${esc(d.categorie)}</dd>` : ''}
+          ${d.numSerie ? `<dt>N° de série</dt><dd>${esc(d.numSerie)}</dd>` : ''}
+          <dt>Organisme</dt><dd>${d.organisme ? esc(d.organisme) : 'Non renseigné'}</dd>
+          ${d.dernierControle ? `<dt>Dernier contrôle</dt><dd>${fr(d.dernierControle)}</dd>` : ''}
+          <dt>Échéance</dt><dd>${d.echeance ? fr(d.echeance) : 'Non renseignée'}</dd>
+          ${d.numCertificat ? `<dt>Certificat / rapport</dt><dd>${esc(d.numCertificat)}</dd>` : ''}
+          ${d.remarque ? `<dt>Remarque</dt><dd>${esc(d.remarque)}</dd>` : ''}
+        </dl>
+        ${lien ? `<a class="lien-cert" href="${esc(lien)}" target="_blank" rel="noopener">Voir le certificat / rapport</a>` : ''}
+      </div></details></li>`;
+  }).join('') : '<li class="vide">Aucun équipement ne correspond.</li>';
+}
+
+// ---------- Admin : dotations ----------
+function admDotations() {
+  const techs = [...new Set(ADM.dotations.map(d => d.technicien))].sort();
+  $('#zAdm').innerHTML = `<div class="adm-barre">
+      <input id="aq" type="search" placeholder="Rechercher un code, un nom, un n° de série" value="${esc(st.admQ)}" autocomplete="off" aria-label="Rechercher">
+      <button class="btn btn-petit" type="button" id="nouv">+ Nouvelle dotation</button></div>
+    <label style="margin-top:10px">Technicien <select id="ftech"><option value="">Tous</option>${techs.map(t =>
+      `<option${st.admTech === t ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+    <ul class="lignes" id="admListe" style="margin-top:12px"></ul>`;
+  $('#aq').addEventListener('input', ev => { st.admQ = ev.target.value; listeAdmDot(); });
+  $('#ftech').addEventListener('change', ev => { st.admTech = ev.target.value; listeAdmDot(); });
+  $('#nouv').addEventListener('click', () => formDotation());
+  listeAdmDot();
+}
+
+function listeAdmDot() {
+  const q = norm(st.admQ.trim());
+  const l = ADM.dotations
+    .filter(d => (!st.admTech || d.technicien === st.admTech) &&
+      (!q || norm([d.id, d.designation, d.numSerie, d.organisme, d.technicien].join(' ')).includes(q)))
+    .sort((a, b) => (b.actif - a.actif) || (a.echeance || '9999').localeCompare(b.echeance || '9999'));
+  const nbRetard = l.filter(d => d.actif && (certif(d) || {}).cls === 'expire').length;
+  $('#admListe').innerHTML = (l.length ? `<li class="vide" style="border:0">${l.length} dotation${l.length > 1 ? 's' : ''}${
+    nbRetard ? `, dont <strong class="txt-retard">${nbRetard} en retard de contrôle</strong>` : ''}</li>` : '') +
+    (l.length ? l.map(d => {
+      const c = certif(d);
+      const cls = !d.actif ? '' : !c ? '' : c.cls === 'expire' ? 'is-retard' : c.cls === 'bientot' ? 'is-pris' : 'is-libre';
+      return `<li><button type="button" class="ligne ligne-btn ${cls}" data-dot="${esc(d.id)}">
+        <span class="tag">${esc(d.id)}</span>
+        <span class="l-main"><span class="l-titre">${esc(d.designation)}</span>
+          <span class="l-meta">${esc(d.technicien)}${d.organisme ? ' · ' + esc(d.organisme) : ''}${d.actif ? '' : ' · <strong>Retiré</strong>'}</span></span>
+        <span class="l-fin">${c ? `<span class="badge cert-${c.cls}">${texteControle(d)}</span>`
+          : '<span class="sans-ech">Sans échéance</span>'}</span></button></li>`;
+    }).join('') : '<li class="vide">Aucune dotation.</li>');
+  $('#admListe').querySelectorAll('[data-dot]').forEach(b =>
+    b.addEventListener('click', () => formDotation(ADM.dotations.find(d => d.id === b.dataset.dot))));
+}
+
+function formDotation(d) {
+  const v = k => esc(d ? d[k] || '' : '');
+  const techs = ADM.acces.filter(a => a.actif || (d && a.nom === d.technicien)).map(a => a.nom).sort();
+  const uniq = arr => [...new Set(arr.filter(Boolean))].sort();
+  const cats = uniq(ADM.dotations.map(x => x.categorie));
+  const orgs = uniq(ADM.dotations.map(x => x.organisme).concat(ADM.equipements.map(x => x.organisme)));
+  dialogue(`<h2>${d ? 'Modifier la dotation' : 'Nouvelle dotation'}</h2>
+    <label>ID <span class="opt">${d ? 'non modifiable' : 'sans espace, ex. DOT-001 ou n° interne'}</span>
+      <input name="id" required value="${v('id')}"${d ? ' readonly' : ''} autocomplete="off" spellcheck="false"></label>
+    <label>Désignation <input name="designation" required value="${v('designation')}" autocomplete="off"></label>
+    <div class="deux">
+      <label>Catégorie <input name="categorie" list="dlCat" value="${v('categorie')}" autocomplete="off"></label>
+      <label>N° de série <input name="numSerie" value="${v('numSerie')}" autocomplete="off"></label>
+    </div>
+    <label>Technicien attitré <select name="technicien" required><option value="">Choisir</option>${techs.map(t =>
+      `<option${d && d.technicien === t ? ' selected' : ''}>${esc(t)}</option>`).join('')}</select></label>
+    <label class="case" style="margin-top:14px"><input type="checkbox" name="actif"${!d || d.actif ? ' checked' : ''}>
+      Actif <span class="opt">(décocher si l’équipement est réformé)</span></label>
+    <fieldset><legend>Contrôle périodique</legend>
+      <label>Organisme de contrôle <input name="organisme" list="dlOrg" value="${v('organisme')}" autocomplete="off"></label>
+      <div class="deux">
+        <label>Dernier contrôle <input type="date" name="dernierControle" value="${v('dernierControle')}"></label>
+        <label>Échéance <input type="date" name="echeance" value="${v('echeance')}"></label>
+      </div>
+      <label>N° de certificat / rapport <input name="numCertificat" value="${v('numCertificat')}" autocomplete="off"></label>
+      <label>Lien vers le document <input type="url" name="lienCertificat" value="${v('lienCertificat')}" placeholder="https://drive.google.com/…"></label>
+    </fieldset>
+    <label>Remarque <span class="opt">facultatif</span><textarea name="remarque" rows="2">${v('remarque')}</textarea></label>
+    <datalist id="dlCat">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
+    <datalist id="dlOrg">${orgs.map(o => `<option value="${esc(o)}">`).join('')}</datalist>`,
+    async fd => {
+      const data = Object.fromEntries(fd);
+      data.actif = fd.has('actif');
+      await admEnvoyer({ op: 'dotation', mode: d ? 'modifier' : 'creer', data }, d ? 'Dotation mise à jour' : 'Dotation créée');
+    });
 }
 
 demarrer();
