@@ -206,6 +206,20 @@ dialog h2{margin:0 0 4px}
 .dot-detail dl{margin-top:6px}
 .sans-ech{color:var(--gris);font-size:.88rem}
 
+/* Sélecteur Drive */
+.lien-ligne{display:flex;gap:8px;align-items:center;margin-top:4px}
+.lien-ligne input{margin:0;flex:1;min-width:0}
+.btn-drive{background:var(--resa)}
+.drive{margin-top:8px;border:1px solid var(--trait);border-radius:var(--r);background:#F8FAFB;padding:8px}
+.drive input{margin:0 0 6px}
+.drive-liste{max-height:260px;overflow:auto}
+.drive-item{display:block;width:100%;text-align:left;background:none;border:0;border-bottom:1px solid var(--trait);
+  padding:8px 4px;font:inherit;color:inherit;cursor:pointer}
+.drive-item:hover{background:#EEF2F5}
+.drive-item small{display:block;color:var(--gris)}
+.lien-choisi{margin:4px 0 0;font-size:.88rem;color:var(--libre);font-weight:600}
+.lien-choisi:empty{display:none}
+
 :focus-visible{outline:3px solid var(--resa);outline-offset:2px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important}}
 </style>
@@ -749,6 +763,7 @@ function dialogue(html, enregistrer) {
     <div class="dlg-btns"><button type="button" class="btn-lien" id="dlgFermer">Annuler</button>
     <button class="btn">Enregistrer</button></div></form>`;
   $('#dlgFermer').addEventListener('click', () => d.close());
+  brancherDrive();
   $('#fDlg').addEventListener('submit', async ev => {
     ev.preventDefault();
     const b = ev.target.querySelector('.btn');
@@ -819,7 +834,7 @@ function formEquipement(e) {
       </div>
       <label>Organisme <input name="organisme" value="${v('organisme')}" autocomplete="off"></label>
       <label>N° de certificat <input name="numCertificat" value="${v('numCertificat')}" autocomplete="off"></label>
-      <label>Lien vers le certificat <input type="url" name="lienCertificat" value="${v('lienCertificat')}" placeholder="https://drive.google.com/…"></label>
+      ${champLien(v('lienCertificat'), 'Lien vers le certificat')}
     </fieldset>`,
     async fd => {
       const data = Object.fromEntries(fd);
@@ -894,7 +909,10 @@ const CHAMPS_CONF = [
   { nom: 'Copie rappels dotations', type: 'emails', label: 'Destinataires du récapitulatif des rappels', aide: 'en plus du technicien concerné' },
   { nom: 'Intervalle rappels contrôles en retard (jours)', type: 'nombre', label: 'Relancer un contrôle en retard tous les (jours)' },
   { titre: 'Site' },
-  { nom: 'Adresse du site', type: 'url', label: 'Adresse du site (utilisée dans les liens des mails)' }
+  { nom: 'Adresse du site', type: 'url', label: 'Adresse du site (utilisée dans les liens des mails)' },
+  { titre: 'Documents' },
+  { nom: 'Dossier Drive des certificats', type: 'texte', label: 'Dossier Drive des certificats et rapports',
+    aide: 'collez l’adresse du dossier ; le bouton Drive listera ses fichiers et sous-dossiers' }
 ];
 
 function admConfig() {
@@ -903,6 +921,7 @@ function admConfig() {
     if (c.titre) return `<h2>${c.titre}</h2>`;
     if (c.type === 'ouinon') return `<label class="case" style="margin-top:12px"><input type="checkbox" id="c${i}"${val(c.nom).toLowerCase() !== 'non' ? ' checked' : ''}> ${c.label}</label>`;
     if (c.type === 'emails') return `<label>${c.label} <span class="opt">${c.aide}</span><textarea id="c${i}" rows="2">${esc(val(c.nom))}</textarea></label>`;
+    if (c.type === 'texte') return `<label>${c.label} <span class="opt">${c.aide || ''}</span><input id="c${i}" type="text" value="${esc(val(c.nom))}" autocomplete="off"></label>`;
     return `<label>${c.label}<input id="c${i}" type="${c.type === 'nombre' ? 'number' : 'url'}"${c.type === 'nombre' ? ' min="1" max="365" required' : ' required'} value="${esc(val(c.nom))}"></label>`;
   }).join('');
   $('#zAdm').innerHTML = `<form class="action config" id="fConf">
@@ -1047,7 +1066,7 @@ function formDotation(d) {
         <label>Échéance <input type="date" name="echeance" value="${v('echeance')}"></label>
       </div>
       <label>N° de certificat / rapport <input name="numCertificat" value="${v('numCertificat')}" autocomplete="off"></label>
-      <label>Lien vers le document <input type="url" name="lienCertificat" value="${v('lienCertificat')}" placeholder="https://drive.google.com/…"></label>
+      ${champLien(v('lienCertificat'), 'Lien vers le certificat / rapport')}
     </fieldset>
     <label>Remarque <span class="opt">facultatif</span><textarea name="remarque" rows="2">${v('remarque')}</textarea></label>
     <datalist id="dlCat">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
@@ -1057,6 +1076,56 @@ function formDotation(d) {
       data.actif = fd.has('actif');
       await admEnvoyer({ op: 'dotation', mode: d ? 'modifier' : 'creer', data }, d ? 'Dotation mise à jour' : 'Dotation créée');
     });
+}
+
+// ---------- Sélecteur de fichiers Drive (formulaires admin) ----------
+let FICHIERS = null;
+
+function champLien(valeur, label) {
+  return `<div style="margin-top:12px"><span style="font-weight:600">${label}</span>
+    <div class="lien-ligne">
+      <input type="url" name="lienCertificat" id="fLien" value="${valeur}" placeholder="https://drive.google.com/…">
+      <button type="button" class="btn btn-petit btn-drive" id="btnDrive">Drive</button>
+    </div>
+    <p class="lien-choisi" id="fLienNom"></p>
+    <div class="drive" id="zDrive" hidden></div></div>`;
+}
+
+function brancherDrive() {
+  const b = $('#btnDrive');
+  if (!b) return;
+  b.addEventListener('click', async () => {
+    const z = $('#zDrive');
+    if (!z.hidden) { z.hidden = true; return; }
+    z.hidden = false;
+    if (!FICHIERS) {
+      z.innerHTML = '<p class="discret">Lecture du dossier Drive…</p>';
+      try { FICHIERS = (await api({ action: 'admin', op: 'fichiers' })).fichiers; }
+      catch (err) { z.innerHTML = `<p class="dlg-err">${esc(err.message)}</p>`; return; }
+    }
+    z.innerHTML = `<input type="search" id="qDrive" placeholder="Rechercher un fichier (nom, n° de série, organisme…)" autocomplete="off">
+      <div class="drive-liste" id="lDrive"></div>
+      <button type="button" class="btn-lien" id="rDrive" style="color:var(--resa)">Actualiser la liste</button>`;
+    const afficher = () => {
+      const q = norm($('#qDrive').value.trim());
+      const l = FICHIERS.filter(f => !q || norm(f.nom + ' ' + f.dossier).includes(q));
+      $('#lDrive').innerHTML = l.length ? l.slice(0, 60).map((f, i) =>
+        `<button type="button" class="drive-item" data-i="${FICHIERS.indexOf(f)}">${esc(f.nom)}
+          <small>${f.dossier ? esc(f.dossier) + ' · ' : ''}modifié le ${fr(f.maj)}</small></button>`).join('') +
+        (l.length > 60 ? `<p class="discret" style="padding:6px 4px">${l.length - 60} autres fichiers : affinez la recherche.</p>` : '')
+        : '<p class="discret" style="padding:6px 4px">Aucun fichier trouvé.</p>';
+      $('#lDrive').querySelectorAll('[data-i]').forEach(x => x.addEventListener('click', () => {
+        const f = FICHIERS[+x.dataset.i];
+        $('#fLien').value = f.url;
+        $('#fLienNom').textContent = 'Fichier choisi : ' + f.nom;
+        z.hidden = true;
+      }));
+    };
+    $('#qDrive').addEventListener('input', afficher);
+    $('#rDrive').addEventListener('click', () => { FICHIERS = null; z.hidden = true; b.click(); });
+    afficher();
+    $('#qDrive').focus();
+  });
 }
 
 demarrer();
