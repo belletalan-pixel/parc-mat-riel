@@ -174,6 +174,13 @@ dt{color:var(--gris)} dd{margin:0}
 .cert-bientot .cert-titre{color:#8A4B0B}
 .cert-expire .cert-titre{color:var(--retard)}
 .lien-cert{display:inline-block;margin-top:8px;color:var(--resa);font-weight:600}
+.badge.cert-controle{background:#DCE6F5;color:var(--resa)}
+.cert.cert-controle{border-left-color:var(--resa)}
+.cert-controle .cert-titre{color:var(--resa)}
+.st-controle{color:var(--resa);font-weight:600}
+.etat.is-resa .etat-titre{color:var(--resa)}
+.btn-depot{background:var(--resa);margin-top:12px;width:auto;max-width:100%;padding:12px 16px}
+.info-ctl{margin:8px 0 0;font-size:.88rem;color:var(--gris)}
 
 /* Administration */
 a.filtre{text-decoration:none;display:inline-block}
@@ -350,7 +357,7 @@ function majCompteur() {
   $('#nbPris').textContent = DATA ? (DATA.equipements.filter(e => e.statut === 'Pris').length || '') : '';
   const dots = (DATA && DATA.mesDotations) || [];
   $('#tabSuivi').hidden = !dots.length;
-  $('#nbSuivi').textContent = dots.filter(d => { const c = certif(d); return c && c.cls !== 'ok'; }).length || '';
+  $('#nbSuivi').textContent = dots.filter(d => { const c = certif(d); return c && (c.cls === 'expire' || c.cls === 'bientot'); }).length || '';
 }
 
 function router() {
@@ -494,12 +501,13 @@ function vueListe() {
 function ligneEq(e) {
   const resa = DATA.reservations.find(r => r.id === e.id && r.au >= DATA.aujourdhui);
   const r = enRetard(e);
-  const cls = e.statut === 'Pris' ? (r ? 'is-retard' : 'is-pris') : 'is-libre';
-  const etat = e.statut === 'Pris'
+  const cls = e.enControle ? 'is-resa' : e.statut === 'Pris' ? (r ? 'is-retard' : 'is-pris') : 'is-libre';
+  const etat = e.enControle ? `<span class="st-controle">En contrôle depuis le ${fr(e.enControle)}</span>`
+    : e.statut === 'Pris'
     ? `<span class="st-pris">Pris par ${esc(e.emprunteur)}</span>${r ? ' <span class="badge retard">En retard</span>' : ''}`
     : `<span class="st-libre">Libre</span>`;
   const c = certif(e);
-  const badgeCert = c && c.cls !== 'ok' ? ` <span class="badge cert-${c.cls}">${c.court}</span>` : '';
+  const badgeCert = c && c.cls !== 'ok' && c.cls !== 'controle' ? ` <span class="badge cert-${c.cls}">${c.court}</span>` : '';
   return `<li><a data-nav class="ligne ${cls}" href="?id=${encodeURIComponent(e.id)}">
     <span class="tag">${esc(e.id)}</span>
     <span class="l-main"><span class="l-titre">${esc(e.designation)}</span>
@@ -587,6 +595,11 @@ function htmlEtat() {
           <label>Motif <span class="opt">facultatif</span><input id="mRem" type="text" autocomplete="off" placeholder="Chantier prolongé…"></label>
           <button class="btn btn-resa">Enregistrer la nouvelle date</button>
         </form></details>` : ''}`;
+  }
+  if (e.enControle) {
+    return `<section class="etat is-resa"><p class="etat-titre">En contrôle${e.organisme ? ' chez ' + esc(e.organisme) : ''}</p>
+      <dl><dt>Depuis le</dt><dd>${fr(e.enControle)}</dd></dl>
+      <p class="info-ctl">L’équipement n’est pas disponible tant qu’il n’est pas revenu de contrôle.</p></section>`;
   }
   return `<section class="etat is-libre"><p class="etat-titre">Disponible à l’atelier</p></section>
     <form class="action" id="fPrendre">
@@ -712,7 +725,9 @@ async function envoyer(params, msg) {
 // ---------- Certificats de contrôle ----------
 function joursEntre(a, b) { return Math.round((Date.parse(a + 'T00:00:00Z') - Date.parse(b + 'T00:00:00Z')) / 864e5); }
 function certif(e) {
-  if (!e || !e.echeance || !DATA) return null;
+  if (!e || !DATA) return null;
+  if (e.enControle) return { cls: 'controle', court: 'En contrôle', long: `en contrôle depuis le ${fr(e.enControle)}` };
+  if (!e.echeance) return null;
   const j = joursEntre(e.echeance, DATA.aujourdhui), seuil = DATA.seuilCertif || 30;
   if (j < 0) return { cls: 'expire', court: 'Certificat expiré', long: `expiré depuis le ${fr(e.echeance)}` };
   if (j <= seuil) return { cls: 'bientot',
@@ -721,14 +736,14 @@ function certif(e) {
   return { cls: 'ok', court: 'Certificat valide', long: `valide jusqu’au ${fr(e.echeance)}` };
 }
 function htmlCertif(e) {
-  const c = certif(e);
+  const c = certif(Object.assign({}, e, { enControle: '' }));   // le statut « En contrôle » est affiché dans le bloc d'état
   if (!c) return '';
   const lien = /^https:\/\//.test(e.lienCertificat || '') ? e.lienCertificat : '';
   return `<section class="cert cert-${c.cls}">
     <p class="cert-titre">Certificat de contrôle ${c.long}</p>
     <dl>
       ${e.dernierControle ? `<dt>Dernier contrôle</dt><dd>${fr(e.dernierControle)}</dd>` : ''}
-      <dt>Échéance</dt><dd>${fr(e.echeance)}</dd>
+      ${e.echeance ? `<dt>Échéance</dt><dd>${fr(e.echeance)}</dd>` : ''}
       ${e.organisme ? `<dt>Organisme</dt><dd>${esc(e.organisme)}</dd>` : ''}
       ${e.numCertificat ? `<dt>N° de certificat</dt><dd>${esc(e.numCertificat)}</dd>` : ''}
     </dl>
@@ -805,7 +820,7 @@ function listeAdmEq() {
     .sort((a, b) => ordreCat(a.categorie) - ordreCat(b.categorie) || a.id.localeCompare(b.id));
   $('#admListe').innerHTML = l.length ? l.map(e => {
     const c = certif(e);
-    const cls = !e.actif ? '' : (e.statut === 'Pris' ? 'is-pris' : 'is-libre');
+    const cls = !e.actif ? '' : e.enControle ? 'is-resa' : (e.statut === 'Pris' ? 'is-pris' : 'is-libre');
     return `<li><button type="button" class="ligne ligne-btn ${cls}" data-eq="${esc(e.id)}">
       <span class="tag">${esc(e.id)}</span>
       <span class="l-main"><span class="l-titre">${esc(e.designation)}</span>
@@ -835,10 +850,12 @@ function formEquipement(e) {
       <label>Organisme <input name="organisme" value="${v('organisme')}" autocomplete="off"></label>
       <label>N° de certificat <input name="numCertificat" value="${v('numCertificat')}" autocomplete="off"></label>
       ${champLien(v('lienCertificat'), 'Lien vers le certificat')}
+      ${caseControle(e, true)}
     </fieldset>`,
     async fd => {
       const data = Object.fromEntries(fd);
       data.actif = fd.has('actif');
+      data.enControle = fd.has('enControle');
       await admEnvoyer({ op: 'equipement', mode: e ? 'modifier' : 'creer', data }, e ? 'Équipement mis à jour' : 'Équipement créé');
     });
 }
@@ -908,6 +925,9 @@ const CHAMPS_CONF = [
   { titre: 'Dotations (équipements attitrés)' },
   { nom: 'Copie rappels dotations', type: 'emails', label: 'Destinataires du récapitulatif des rappels', aide: 'en plus du technicien concerné' },
   { nom: 'Intervalle rappels contrôles en retard (jours)', type: 'nombre', label: 'Relancer un contrôle en retard tous les (jours)' },
+  { titre: 'Équipements en contrôle' },
+  { nom: 'Rappel si en contrôle depuis (jours)', type: 'nombre', label: 'Prévenir si un équipement est en contrôle depuis (jours)' },
+  { nom: 'Destinataires rappel contrôle long', type: 'emails', label: 'Destinataires de ce rappel', aide: 'adresses séparées par des virgules' },
   { titre: 'Site' },
   { nom: 'Adresse du site', type: 'url', label: 'Adresse du site (utilisée dans les liens des mails)' },
   { titre: 'Documents' },
@@ -952,6 +972,7 @@ function admConfig() {
 function texteControle(d) {
   const c = certif(d);
   if (!c) return '';
+  if (c.cls === 'controle') return 'En contrôle';
   if (c.cls === 'expire') return 'Contrôle en retard';
   if (c.cls === 'ok') return 'À jour';
   const j = joursEntre(d.echeance, DATA.aujourdhui);
@@ -975,9 +996,10 @@ function remplirSuivi() {
     .filter(d => !q || norm([d.id, d.designation, d.numSerie, d.organisme, d.categorie].join(' ')).includes(q));
   el.innerHTML = l.length ? l.map(d => {
     const c = certif(d);
-    const cls = !c ? '' : c.cls === 'expire' ? 'is-retard' : c.cls === 'bientot' ? 'is-pris' : 'is-libre';
+    const cls = !c ? '' : c.cls === 'expire' ? 'is-retard' : c.cls === 'bientot' ? 'is-pris' : c.cls === 'controle' ? 'is-resa' : 'is-libre';
     const lien = /^https:\/\//.test(d.lienCertificat || '') ? d.lienCertificat : '';
     const badge = !c ? '<span class="sans-ech">Échéance non renseignée</span>'
+      : c.cls === 'controle' ? '<span class="badge cert-controle">En contrôle</span>'
       : c.cls === 'expire' ? '<span class="badge cert-expire">Contrôle en retard</span>'
       : c.cls === 'bientot' ? `<span class="badge cert-bientot">${texteControle(d)}</span>`
       : '<span class="badge cert-ok">À jour</span>';
@@ -987,7 +1009,8 @@ function remplirSuivi() {
           <span class="l-meta">${[d.numSerie ? 'N° série ' + esc(d.numSerie) : '', d.organisme ? esc(d.organisme) : ''].filter(Boolean).join(' · ')}</span></span>
         <span class="l-fin">${badge}</span></summary>
       <div class="dot-detail ${cls}">
-        ${c ? `<p class="cert-titre" style="margin:8px 0 0">${c.cls === 'expire' ? 'Contrôle en retard : échéance dépassée le ' + fr(d.echeance)
+        ${c ? `<p class="cert-titre" style="margin:8px 0 0">${c.cls === 'controle' ? 'Déposé en contrôle le ' + fr(d.enControle)
+          : c.cls === 'expire' ? 'Contrôle en retard : échéance dépassée le ' + fr(d.echeance)
           : 'Prochain contrôle avant le ' + fr(d.echeance)}</p>` : ''}
         <dl>
           ${d.categorie ? `<dt>Catégorie</dt><dd>${esc(d.categorie)}</dd>` : ''}
@@ -999,8 +1022,22 @@ function remplirSuivi() {
           ${d.remarque ? `<dt>Remarque</dt><dd>${esc(d.remarque)}</dd>` : ''}
         </dl>
         ${lien ? `<a class="lien-cert" href="${esc(lien)}" target="_blank" rel="noopener">Voir le certificat / rapport</a>` : ''}
+        ${d.enControle
+          ? '<p class="info-ctl">Les rappels sont suspendus. Le statut se retirera dès que le service QSSE aura saisi le nouveau certificat.</p>'
+          : `<button type="button" class="btn btn-depot" data-depot="${esc(d.id)}">J’ai déposé l’équipement en contrôle</button>`}
       </div></details></li>`;
   }).join('') : '<li class="vide">Aucun équipement ne correspond.</li>';
+  el.querySelectorAll('[data-depot]').forEach(b => b.addEventListener('click', async () => {
+    const d = DATA.mesDotations.find(x => x.id === b.dataset.depot);
+    if (!confirm('Confirmer le dépôt en contrôle de ' + d.designation + (d.organisme ? ' chez ' + d.organisme : '') +
+      ' ?\nLes rappels seront suspendus jusqu’au retour du certificat.')) return;
+    b.disabled = true; b.textContent = 'Enregistrement…';
+    try {
+      DATA = (await api({ action: 'deposer', id: d.id })).etat;
+      stocker('pm_cache', DATA); majCompteur(); remplirSuivi();
+      toast('Dépôt en contrôle enregistré');
+    } catch (err) { toast(err.message, true); b.disabled = false; b.textContent = 'J’ai déposé l’équipement en contrôle'; }
+  }));
 }
 
 // ---------- Admin : dotations ----------
@@ -1029,7 +1066,7 @@ function listeAdmDot() {
     nbRetard ? `, dont <strong class="txt-retard">${nbRetard} en retard de contrôle</strong>` : ''}</li>` : '') +
     (l.length ? l.map(d => {
       const c = certif(d);
-      const cls = !d.actif ? '' : !c ? '' : c.cls === 'expire' ? 'is-retard' : c.cls === 'bientot' ? 'is-pris' : 'is-libre';
+      const cls = !d.actif ? '' : !c ? '' : c.cls === 'expire' ? 'is-retard' : c.cls === 'bientot' ? 'is-pris' : c.cls === 'controle' ? 'is-resa' : 'is-libre';
       return `<li><button type="button" class="ligne ligne-btn ${cls}" data-dot="${esc(d.id)}">
         <span class="tag">${esc(d.id)}</span>
         <span class="l-main"><span class="l-titre">${esc(d.designation)}</span>
@@ -1067,6 +1104,7 @@ function formDotation(d) {
       </div>
       <label>N° de certificat / rapport <input name="numCertificat" value="${v('numCertificat')}" autocomplete="off"></label>
       ${champLien(v('lienCertificat'), 'Lien vers le certificat / rapport')}
+      ${caseControle(d)}
     </fieldset>
     <label>Remarque <span class="opt">facultatif</span><textarea name="remarque" rows="2">${v('remarque')}</textarea></label>
     <datalist id="dlCat">${cats.map(c => `<option value="${esc(c)}">`).join('')}</datalist>
@@ -1074,6 +1112,7 @@ function formDotation(d) {
     async fd => {
       const data = Object.fromEntries(fd);
       data.actif = fd.has('actif');
+      data.enControle = fd.has('enControle');
       await admEnvoyer({ op: 'dotation', mode: d ? 'modifier' : 'creer', data }, d ? 'Dotation mise à jour' : 'Dotation créée');
     });
 }
@@ -1126,6 +1165,16 @@ function brancherDrive() {
     afficher();
     $('#qDrive').focus();
   });
+}
+
+// ---------- Case « En contrôle » des formulaires admin ----------
+function caseControle(x, commun) {
+  if (!x) return '';      // pas de dépôt en contrôle à la création
+  return `<label class="case" style="margin-top:14px"><input type="checkbox" name="enControle"${x.enControle ? ' checked' : ''}>
+      Déposé en contrôle <span class="opt">${x.enControle ? 'depuis le ' + fr(x.enControle) : '(suspend les rappels)'}</span></label>
+    <p class="info-ctl">Se décoche automatiquement quand vous saisissez une nouvelle échéance.${
+      commun ? ' Un équipement en contrôle ne peut pas être emprunté.' + (x.statut === 'Pris' && !x.enControle
+        ? ` <strong>Pris par ${esc(x.emprunteur)} : il sera rendu automatiquement.</strong>` : '') : ''}</p>`;
 }
 
 demarrer();
