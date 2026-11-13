@@ -1024,7 +1024,9 @@ function remplirSuivi() {
         ${lien ? `<a class="lien-cert" href="${esc(lien)}" target="_blank" rel="noopener">Voir le certificat / rapport</a>` : ''}
         ${d.enControle
           ? '<p class="info-ctl">Les rappels sont suspendus. Le statut se retirera dès que le service QSSE aura saisi le nouveau certificat.</p>'
-          : `<button type="button" class="btn btn-depot" data-depot="${esc(d.id)}">J’ai déposé l’équipement en contrôle</button>`}
+          : c && (c.cls === 'bientot' || c.cls === 'expire')      // bouton seulement si le contrôle est à prévoir ou en retard
+          ? `<button type="button" class="btn btn-depot" data-depot="${esc(d.id)}">J’ai déposé l’équipement en contrôle</button>`
+          : ''}
       </div></details></li>`;
   }).join('') : '<li class="vide">Aucun équipement ne correspond.</li>';
   el.querySelectorAll('[data-depot]').forEach(b => b.addEventListener('click', async () => {
